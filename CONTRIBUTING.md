@@ -114,8 +114,8 @@ Please adhere to the project's [Code of Conduct](CODE_OF_CONDUCT.md).
 
 If you have any questions, please contact us through:
 
-- GitHub Issues: https://github.com/your-username/agi-agent/issues
-- 讨论区: https://github.com/your-username/agi-agent/discussions
+- GitHub Issues: https://github.com/taojio/agi-agent/issues
+- 讨论区: https://github.com/taojio/agi-agent/discussions
 
 ---
 
