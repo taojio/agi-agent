@@ -1,0 +1,73 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Data
+*.db
+*.sqlite
+*.sqlite3
+data/
+*.csv
+*.json
+memory/
+snapshots/
+
+# Models
+*.pt
+*.pth
+*.onnx
+models/
+checkpoints/
+
+# Config
+.env
+config.yaml
+config.json
+*.ini
+
+# Output
+dist/
+build/
+*.egg-info/
+.eggs/
+*.whl
+
+# Testing
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+
+# WebUI
+node_modules/
+*.min.js
+*.min.css
+
+# Security
+*.key
+*.pem
+*.crt
+*.cert

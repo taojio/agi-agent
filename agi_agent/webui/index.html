@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGI Agent WebUI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f23; color: #e0e0e0; }
+        .sidebar { width: 200px; height: 100vh; background: #1a1a2e; position: fixed; left: 0; top: 0; padding: 20px; }
+        .sidebar h1 { font-size: 1.2em; margin-bottom: 20px; color: #00d4ff; }
+        .sidebar nav ul { list-style: none; }
+        .sidebar nav ul li { margin-bottom: 10px; }
+        .sidebar nav ul li a { color: #a0a0a0; text-decoration: none; padding: 8px 12px; display: block; border-radius: 4px; }
+        .sidebar nav ul li a:hover, .sidebar nav ul li a.active { background: #2a2a4e; color: #00d4ff; }
+        .main-content { margin-left: 200px; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h2 { color: #00d4ff; }
+        .header .agent-status { padding: 8px 16px; border-radius: 20px; font-size: 0.8em; }
+        .header .agent-status.running { background: #00ff88; color: #003322; }
+        .header .agent-status.stopped { background: #ff4444; color: #330000; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: #1a1a2e; border-radius: 8px; padding: 20px; }
+        .card h3 { color: #00d4ff; margin-bottom: 15px; font-size: 1em; }
+        .card .metric { display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px; background: #2a2a4e; border-radius: 4px; }
+        .card .metric label { color: #a0a0a0; font-size: 0.9em; }
+        .card .metric value { font-weight: bold; color: #ffffff; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-right: 8px; }
+        .btn-primary { background: #00d4ff; color: #003344; }
+        .btn-success { background: #00ff88; color: #003322; }
+        .btn-danger { background: #ff4444; color: #330000; }
+        .btn-secondary { background: #444466; color: #ffffff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table th, table td { padding: 10px; text-align: left; border-bottom: 1px solid #2a2a4e; font-size: 0.9em; }
+        table th { color: #00d4ff; }
+        table tr:hover { background: #2a2a4e; }
+        textarea { width: 100%; height: 200px; background: #2a2a4e; border: 1px solid #3a3a5e; border-radius: 4px; padding: 10px; color: #e0e0e0; font-family: monospace; }
+        input[type="text"], select { padding: 8px; background: #2a2a4e; border: 1px solid #3a3a5e; border-radius: 4px; color: #e0e0e0; }
+        .memory-tier { margin-bottom: 20px; }
+        .memory-tier h4 { color: #8080ff; margin-bottom: 10px; }
+        .memory-item { background: #2a2a4e; padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 0.9em; }
+        .memory-item .meta { color: #606080; font-size: 0.8em; margin-top: 5px; }
+        .progress-bar { height: 20px; background: #2a2a4e; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+        .progress-bar .progress { height: 100%; background: linear-gradient(90deg, #00d4ff, #00ff88); }
+        .evolution-phase { padding: 5px 10px; border-radius: 10px; font-size: 0.8em; }
+        .evolution-phase.collection { background: #00d4ff; color: #003344; }
+        .evolution-phase.analysis { background: #8080ff; color: #222244; }
+        .evolution-phase.optimization { background: #00ff88; color: #003322; }
+        .evolution-phase.verification { background: #ffff00; color: #333300; }
+        .tabs { display: flex; margin-bottom: 20px; }
+        .tabs button { padding: 10px 20px; background: #2a2a4e; border: none; color: #a0a0a0; cursor: pointer; border-radius: 4px 4px 0 0; }
+        .tabs button.active { background: #00d4ff; color: #003344; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .skill-card { background: #2a2a4e; padding: 15px; border-radius: 4px; margin-bottom: 10px; }
+        .skill-card .name { font-weight: bold; color: #00d4ff; }
+        .skill-card .status { float: right; font-size: 0.8em; padding: 2px 8px; border-radius: 10px; }
+        .skill-card .status.deployed { background: #00ff88; color: #003322; }
+        .skill-card .status.testing { background: #ffff00; color: #333300; }
+        .skill-card .status.rejected { background: #ff4444; color: #330000; }
+        .priority-low { color: #808080; }
+        .priority-medium { color: #ffff00; }
+        .priority-high { color: #ff8800; }
+        .priority-critical { color: #ff4444; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>AGI Agent</h1>
+        <nav>
+            <ul>
+                <li><a href="#dashboard" class="active">仪表盘</a></li>
+                <li><a href="#memory">记忆系统</a></li>
+                <li><a href="#soul">SOUL 编辑</a></li>
+                <li><a href="#tasks">任务看板</a></li>
+                <li><a href="#evolution">进化监控</a></li>
+                <li><a href="#metaskill">MetaSkill</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2 id="page-title">仪表盘</h2>
+            <div class="agent-status running" id="agent-status">运行中</div>
+        </div>
+
+        <div id="dashboard" class="tab-content active">
+            <div class="grid">
+                <div class="card">
+                    <h3>核心指标</h3>
+                    <div class="metric"><label>自由能</label><value id="fe">-</value></div>
+                    <div class="metric"><label>置信度</label><value id="confidence">-</value></div>
+                    <div class="metric"><label>新颖度</label><value id="novelty">-</value></div>
+                    <div class="metric"><label>步数</label><value id="step">-</value></div>
+                </div>
+                <div class="card">
+                    <h3>记忆统计</h3>
+                    <div class="metric"><label>L1 上下文</label><value id="l1-count">-</value></div>
+                    <div class="metric"><label>L2 短期</label><value id="l2-count">-</value></div>
+                    <div class="metric"><label>L3 中期</label><value id="l3-count">-</value></div>
+                    <div class="metric"><label>L4 学习</label><value id="l4-count">-</value></div>
+                    <div class="metric"><label>L5 永久</label><value id="l5-count">-</value></div>
+                </div>
+                <div class="card">
+                    <h3>进化状态</h3>
+                    <div class="metric"><label>循环次数</label><value id="evo-cycle">-</value></div>
+                    <div class="metric"><label>模式</label><value id="evo-mode">-</value></div>
+                    <div class="metric"><label>提案数</label><value id="evo-proposals">-</value></div>
+                    <div class="metric"><label>元技能</label><value id="meta-count">-</value></div>
+                </div>
+                <div class="card">
+                    <h3>任务状态</h3>
+                    <div class="metric"><label>DAG 任务</label><value id="dag-tasks">-</value></div>
+                    <div class="metric"><label>看板任务</label><value id="board-tasks">-</value></div>
+                    <div class="metric"><label>心跳任务</label><value id="heartbeat-tasks">-</value></div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>操作</h3>
+                <button class="btn btn-primary" onclick="runStep()">执行单步</button>
+                <button class="btn btn-success" onclick="runMultipleSteps()">执行10步</button>
+                <button class="btn btn-secondary" onclick="refreshData()">刷新数据</button>
+            </div>
+        </div>
+
+        <div id="memory" class="tab-content">
+            <div class="card">
+                <h3>记忆搜索</h3>
+                <input type="text" id="memory-query" placeholder="搜索记忆..." style="width: 300px;">
+                <button class="btn btn-primary" onclick="searchMemories()">搜索</button>
+                <select id="memory-tier-select">
+                    <option value="all">所有层级</option>
+                    <option value="L1">L1 上下文</option>
+                    <option value="L2">L2 短期</option>
+                    <option value="L3">L3 中期</option>
+                    <option value="L4">L4 学习</option>
+                    <option value="L5">L5 永久</option>
+                </select>
+            </div>
+            <div class="card">
+                <h3>添加记忆</h3>
+                <textarea id="memory-content" placeholder="记忆内容..."></textarea>
+                <br>
+                <select id="add-memory-tier">
+                    <option value="L1">L1 上下文</option>
+                    <option value="L2">L2 短期</option>
+                    <option value="L3">L3 中期</option>
+                    <option value="L4">L4 学习</option>
+                    <option value="L5">L5 永久</option>
+                </select>
+                <button class="btn btn-success" onclick="addMemory()">添加</button>
+            </div>
+            <div class="card">
+                <h3>记忆列表</h3>
+                <div id="memory-list"></div>
+            </div>
+        </div>
+
+        <div id="soul" class="tab-content">
+            <div class="tabs">
+                <button class="active" onclick="switchSoulTab('identity')">身份锚点</button>
+                <button onclick="switchSoulTab('goals')">目标树</button>
+                <button onclick="switchSoulTab('boundaries')">行为边界</button>
+                <button onclick="switchSoulTab('permissions')">权限白名单</button>
+                <button onclick="switchSoulTab('importexport')">导入/导出</button>
+            </div>
+            
+            <div id="soul-identity" class="tab-content active">
+                <div class="card">
+                    <h3>身份信息</h3>
+                    <div class="grid">
+                        <div>
+                            <label>名称:</label>
+                            <input type="text" id="soul-name">
+                        </div>
+                        <div>
+                            <label>人设:</label>
+                            <input type="text" id="soul-persona">
+                        </div>
+                        <div>
+                            <label>沟通风格:</label>
+                            <input type="text" id="soul-style">
+                        </div>
+                        <div>
+                            <label>版本:</label>
+                            <input type="text" id="soul-version" readonly>
+                        </div>
+                    </div>
+                    <h4>人格参数 (0-100)</h4>
+                    <div class="grid">
+                        <div>
+                            <label>严谨度:</label>
+                            <input type="range" id="soul-rigor" min="0" max="100">
+                        </div>
+                        <div>
+                            <label>创造力:</label>
+                            <input type="range" id="soul-creativity" min="0" max="100">
+                        </div>
+                        <div>
+                            <label>决策倾向:</label>
+                            <input type="range" id="soul-decision" min="0" max="100">
+                        </div>
+                        <div>
+                            <label>同理心:</label>
+                            <input type="range" id="soul-empathy" min="0" max="100">
+                        </div>
+                    </div>
+                    <button class="btn btn-success" onclick="saveSoul()">保存</button>
+                </div>
+            </div>
+
+            <div id="soul-goals" class="tab-content">
+                <div class="card">
+                    <h3>核心使命</h3>
+                    <textarea id="soul-mission"></textarea>
+                    <h3>阶段目标</h3>
+                    <div id="soul-goals-list"></div>
+                </div>
+            </div>
+
+            <div id="soul-boundaries" class="tab-content">
+                <div class="card">
+                    <h3>禁止事项</h3>
+                    <ul id="boundaries-forbidden"></ul>
+                    <h3>伦理底线</h3>
+                    <ul id="boundaries-ethical"></ul>
+                    <h3>安全红线</h3>
+                    <ul id="boundaries-safety"></ul>
+                </div>
+            </div>
+
+            <div id="soul-permissions" class="tab-content">
+                <div class="card">
+                    <h3>权限列表</h3>
+                    <table>
+                        <tr><th>资源类型</th><th>权限</th></tr>
+                        <tbody id="permissions-table"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="soul-importexport" class="tab-content">
+                <div class="card">
+                    <h3>导出 SOUL</h3>
+                    <textarea id="soul-export-md" readonly></textarea>
+                    <button class="btn btn-primary" onclick="exportSoul()">导出</button>
+                </div>
+                <div class="card">
+                    <h3>导入 SOUL</h3>
+                    <textarea id="soul-import-md" placeholder="粘贴 SOUL.md 内容..."></textarea>
+                    <button class="btn btn-success" onclick="importSoul()">导入</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tasks" class="tab-content">
+            <div class="tabs">
+                <button class="active" onclick="switchTaskTab('board')">任务看板</button>
+                <button onclick="switchTaskTab('dag')">DAG 编排</button>
+                <button onclick="switchTaskTab('heartbeat')">心跳调度</button>
+            </div>
+
+            <div id="task-board" class="tab-content active">
+                <div class="card">
+                    <h3>提交任务</h3>
+                    <input type="text" id="task-name" placeholder="任务名称" style="width: 300px;">
+                    <textarea id="task-desc" placeholder="任务描述" style="height: 60px;"></textarea>
+                    <select id="task-priority">
+                        <option value="low">低</option>
+                        <option value="medium">中</option>
+                        <option value="high">高</option>
+                        <option value="critical">紧急</option>
+                    </select>
+                    <button class="btn btn-success" onclick="submitTask()">提交</button>
+                </div>
+                <div class="card">
+                    <h3>任务列表</h3>
+                    <table>
+                        <tr><th>ID</th><th>名称</th><th>状态</th><th>优先级</th><th>进度</th></tr>
+                        <tbody id="tasks-table"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="task-dag" class="tab-content">
+                <div class="card">
+                    <h3>创建 DAG</h3>
+                    <div id="dag-builder">
+                        <div id="dag-tasks-list"></div>
+                        <button class="btn btn-primary" onclick="addDagTask()">添加任务</button>
+                        <button class="btn btn-success" onclick="executeDag()">执行 DAG</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="task-heartbeat" class="tab-content">
+                <div class="card">
+                    <h3>心跳任务统计</h3>
+                    <div class="metric"><label>总任务数</label><value id="hb-total">-</value></div>
+                    <div class="metric"><label>启用任务</label><value id="hb-enabled">-</value></div>
+                    <div class="metric"><label>成功次数</label><value id="hb-success">-</value></div>
+                    <div class="metric"><label>成功率</label><value id="hb-rate">-</value></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="evolution" class="tab-content">
+            <div class="card">
+                <h3>进化统计</h3>
+                <div class="grid">
+                    <div class="metric"><label>循环次数</label><value id="evo-cycle2">-</value></div>
+                    <div class="metric"><label>模式</label><value id="evo-mode2">-</value></div>
+                    <div class="metric"><label>外环记录</label><value id="evo-outer">-</value></div>
+                    <div class="metric"><label>内环记录</label><value id="evo-inner">-</value></div>
+                </div>
+                <h4>进化等级</h4>
+                <div class="metric"><label>组件级适应</label><value id="evo-component">-</value></div>
+                <div class="metric"><label>个体级进化</label><value id="evo-individual">-</value></div>
+                <div class="metric"><label>群体级进化</label><value id="evo-collective">-</value></div>
+                <button class="btn btn-primary" onclick="runOuterLoop()">运行外环</button>
+                <button class="btn btn-success" onclick="runInnerLoop()">运行内环</button>
+            </div>
+            <div class="card">
+                <h3>进化提案</h3>
+                <table>
+                    <tr><th>ID</th><th>标题</th><th>等级</th><th>状态</th><th>收益</th></tr>
+                    <tbody id="proposals-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="metaskill" class="tab-content">
+            <div class="card">
+                <h3>生成元技能</h3>
+                <textarea id="metaskill-requirement" placeholder="描述你想要创建的技能..."></textarea>
+                <button class="btn btn-success" onclick="generateMetaSkill()">生成技能</button>
+            </div>
+            <div class="card">
+                <h3>已生成技能</h3>
+                <div id="skills-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let dagTasks = [];
+
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const options = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) options.body = JSON.stringify(body);
+            const res = await fetch(`${API_BASE}${endpoint}`, options);
+            return await res.json();
+        }
+
+        async function refreshData() {
+            const metrics = await apiCall('/agent/metrics');
+            if (!metrics.error) {
+                document.getElementById('fe').textContent = metrics.free_energy?.toFixed(4) || '-';
+                document.getElementById('confidence').textContent = metrics.confidence?.toFixed(2) || '-';
+                document.getElementById('novelty').textContent = metrics.novelty?.toFixed(4) || '-';
+                document.getElementById('step').textContent = metrics.step || '-';
+            }
+
+            const memoryStats = await apiCall('/memory/stats');
+            document.getElementById('l1-count').textContent = memoryStats.L1?.count || 0;
+            document.getElementById('l2-count').textContent = memoryStats.L2?.count || 0;
+            document.getElementById('l3-count').textContent = memoryStats.L3?.count || 0;
+            document.getElementById('l4-count').textContent = memoryStats.L4?.count || 0;
+            document.getElementById('l5-count').textContent = memoryStats.L5?.count || 0;
+
+            const evolutionStats = await apiCall('/evolution/stats');
+            document.getElementById('evo-cycle').textContent = evolutionStats.dual_loop?.cycle || 0;
+            document.getElementById('evo-mode').textContent = evolutionStats.dual_loop?.mode || '-';
+            document.getElementById('evo-proposals').textContent = Object.values(evolutionStats.dual_loop?.proposals || {}).reduce((a,b)=>a+b,0) || 0;
+            document.getElementById('meta-count').textContent = evolutionStats.metaskill?.total_generated || 0;
+
+            const taskStats = await apiCall('/tasks/stats');
+            document.getElementById('dag-tasks').textContent = taskStats.dag?.total_tasks || 0;
+            document.getElementById('board-tasks').textContent = taskStats.board?.total_tasks || 0;
+            document.getElementById('heartbeat-tasks').textContent = taskStats.heartbeat?.total_tasks || 0;
+        }
+
+        async function runStep() {
+            await apiCall('/agent/step', 'POST', { observation: Array(16).fill(0) });
+            refreshData();
+        }
+
+        async function runMultipleSteps() {
+            await apiCall('/agent/run', 'POST', { steps: 10 });
+            refreshData();
+        }
+
+        async function searchMemories() {
+            const query = document.getElementById('memory-query').value;
+            const tier = document.getElementById('memory-tier-select').value;
+            const res = await apiCall('/memory/search', 'POST', { query, limit: 20 });
+            displayMemories(res.results || []);
+        }
+
+        function displayMemories(memories) {
+            const list = document.getElementById('memory-list');
+            list.innerHTML = '';
+            memories.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'memory-item';
+                div.innerHTML = `<div>${m.content}</div><div class="meta">${m.metadata?.category} - ${new Date(m.created_at * 1000).toLocaleString()}</div>`;
+                list.appendChild(div);
+            });
+        }
+
+        async function addMemory() {
+            const content = document.getElementById('memory-content').value;
+            const tier = document.getElementById('add-memory-tier').value;
+            await apiCall('/memory/add', 'POST', { content, tier });
+            document.getElementById('memory-content').value = '';
+            refreshData();
+        }
+
+        async function loadSoul() {
+            const soul = await apiCall('/soul/info');
+            document.getElementById('soul-name').value = soul.identity?.name || '';
+            document.getElementById('soul-persona').value = soul.identity?.persona || '';
+            document.getElementById('soul-style').value = soul.identity?.communication_style || '';
+            document.getElementById('soul-version').value = soul.version || '';
+            document.getElementById('soul-rigor').value = soul.identity?.personality?.rigorousness || 50;
+            document.getElementById('soul-creativity').value = soul.identity?.personality?.creativity || 50;
+            document.getElementById('soul-decision').value = soul.identity?.personality?.decision_tendency || 50;
+            document.getElementById('soul-empathy').value = soul.identity?.personality?.empathy || 50;
+            document.getElementById('soul-mission').value = soul.goals?.mission || '';
+
+            const goalsList = document.getElementById('soul-goals-list');
+            goalsList.innerHTML = '';
+            (soul.goals?.nodes || []).forEach(n => {
+                goalsList.innerHTML += `<div class="memory-item">${n.name} - ${n.description}</div>`;
+            });
+
+            ['forbidden', 'ethical', 'safety'].forEach(type => {
+                const ul = document.getElementById(`boundaries-${type}`);
+                ul.innerHTML = '';
+                (soul.boundaries[`${type}_actions`] || soul.boundaries[`${type}_principles`] || soul.boundaries[`${type}_redlines`] || []).forEach(item => {
+                    ul.innerHTML += `<li>${item}</li>`;
+                });
+            });
+
+            const permTable = document.getElementById('permissions-table');
+            permTable.innerHTML = '';
+            (soul.permissions?.entries || []).forEach(p => {
+                permTable.innerHTML += `<tr><td>${p.resource_type}</td><td>${p.permissions?.join(', ')}</td></tr>`;
+            });
+        }
+
+        function switchSoulTab(tab) {
+            document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#soul-identity, #soul-goals, #soul-boundaries, #soul-permissions, #soul-importexport').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`soul-${tab}`).classList.add('active');
+        }
+
+        async function saveSoul() {
+            const data = {
+                identity: {
+                    name: document.getElementById('soul-name').value,
+                    persona: document.getElementById('soul-persona').value,
+                    communication_style: document.getElementById('soul-style').value,
+                    personality: {
+                        rigorousness: parseInt(document.getElementById('soul-rigor').value),
+                        creativity: parseInt(document.getElementById('soul-creativity').value),
+                        decision_tendency: parseInt(document.getElementById('soul-decision').value),
+                        empathy: parseInt(document.getElementById('soul-empathy').value)
+                    }
+                }
+            };
+            await apiCall('/soul/update', 'POST', data);
+            loadSoul();
+        }
+
+        async function exportSoul() {
+            const res = await apiCall('/soul/export');
+            document.getElementById('soul-export-md').value = res.markdown || '';
+        }
+
+        async function importSoul() {
+            const md = document.getElementById('soul-import-md').value;
+            await apiCall('/soul/import', 'POST', { markdown: md });
+            loadSoul();
+        }
+
+        function switchTaskTab(tab) {
+            document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#task-board, #task-dag, #task-heartbeat').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`task-${tab}`).classList.add('active');
+            if (tab === 'heartbeat') loadHeartbeatStats();
+        }
+
+        async function submitTask() {
+            const name = document.getElementById('task-name').value;
+            const desc = document.getElementById('task-desc').value;
+            const priority = document.getElementById('task-priority').value;
+            await apiCall('/tasks/submit', 'POST', { name, description: desc, priority });
+            document.getElementById('task-name').value = '';
+            document.getElementById('task-desc').value = '';
+        }
+
+        function addDagTask() {
+            dagTasks.push({ name: '', description: '', dependencies: [] });
+            renderDagTasks();
+        }
+
+        function renderDagTasks() {
+            const container = document.getElementById('dag-tasks-list');
+            container.innerHTML = '';
+            dagTasks.forEach((t, i) => {
+                container.innerHTML += `
+                    <div class="memory-item">
+                        <input type="text" placeholder="任务${i+1}名称" onchange="dagTasks[${i}].name=this.value">
+                        <input type="text" placeholder="依赖任务索引(逗号分隔)" onchange="dagTasks[${i}].dependencies=this.value.split(',').map(n=>parseInt(n.trim()))">
+                    </div>
+                `;
+            });
+        }
+
+        async function executeDag() {
+            await apiCall('/tasks/dag', 'POST', { tasks: dagTasks });
+            dagTasks = [];
+            renderDagTasks();
+            refreshData();
+        }
+
+        async function loadHeartbeatStats() {
+            const stats = await apiCall('/tasks/stats');
+            const hb = stats.heartbeat || {};
+            document.getElementById('hb-total').textContent = hb.total_tasks || 0;
+            document.getElementById('hb-enabled').textContent = hb.enabled_tasks || 0;
+            document.getElementById('hb-success').textContent = hb.total_success || 0;
+            document.getElementById('hb-rate').textContent = (hb.success_rate * 100 || 0).toFixed(1) + '%';
+        }
+
+        async function runOuterLoop() {
+            await apiCall('/evolution/run', 'POST', { outer: true });
+            loadEvolution();
+        }
+
+        async function runInnerLoop() {
+            await apiCall('/evolution/run', 'POST', { inner: true });
+            loadEvolution();
+        }
+
+        async function loadEvolution() {
+            const stats = await apiCall('/evolution/stats');
+            const evo = stats.dual_loop || {};
+            document.getElementById('evo-cycle2').textContent = evo.cycle || 0;
+            document.getElementById('evo-mode2').textContent = evo.mode || '-';
+            document.getElementById('evo-outer').textContent = evo.outer_loop_records || 0;
+            document.getElementById('evo-inner').textContent = evo.inner_loop_records || 0;
+            document.getElementById('evo-component').textContent = evo.enabled_levels?.component ? '开启' : '关闭';
+            document.getElementById('evo-individual').textContent = evo.enabled_levels?.individual ? '开启' : '关闭';
+            document.getElementById('evo-collective').textContent = evo.enabled_levels?.collective ? '开启' : '关闭';
+
+            const proposals = await apiCall('/evolution/proposals');
+            const table = document.getElementById('proposals-table');
+            table.innerHTML = '';
+            (proposals.proposals || []).forEach(p => {
+                table.innerHTML += `<tr><td>${p.proposal_id}</td><td>${p.title}</td><td>${p.level}</td><td>${p.status}</td><td>${(p.expected_benefit*100).toFixed(0)}%</td></tr>`;
+            });
+        }
+
+        async function generateMetaSkill() {
+            const requirement = document.getElementById('metaskill-requirement').value;
+            const res = await apiCall('/evolution/generate_skill', 'POST', { requirement });
+            loadSkills();
+        }
+
+        async function loadSkills() {
+            const stats = await apiCall('/evolution/stats');
+            const skillsList = document.getElementById('skills-list');
+            skillsList.innerHTML = '';
+            const generator = await apiCall('/evolution/stats');
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelector(`a[href="#${tabId}"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('page-title').textContent = {
+                'dashboard': '仪表盘', 'memory': '记忆系统', 'soul': 'SOUL 编辑',
+                'tasks': '任务看板', 'evolution': '进化监控', 'metaskill': 'MetaSkill'
+            }[tabId];
+            
+            if (tabId === 'soul') loadSoul();
+            if (tabId === 'evolution') loadEvolution();
+        }
+
+        document.querySelectorAll('.sidebar a').forEach(a => {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchTab(a.getAttribute('href').substring(1));
+            });
+        });
+
+        refreshData();
+    </script>
+</body>
+</html>
