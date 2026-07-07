@@ -106,8 +106,8 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 ## 联系方式 / Contact
 
-- 项目地址: https://github.com/your-username/agi-agent
-- 问题反馈: https://github.com/your-username/agi-agent/issues
+- 项目地址: https://github.com/taojio/agi-agent
+- 问题反馈: https://github.com/taojio/agi-agent/issues
 
 ---
 
