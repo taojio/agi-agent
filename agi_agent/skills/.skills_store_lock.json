@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "skills": {
+    "calendar": {
+      "name": "Calendar",
+      "zip_url": "https://api.skillhub.cn/api/v1/download?slug=calendar",
+      "source": "community",
+      "version": "1.0.0",
+      "installedAt": "2026-07-05T00:36:53Z"
+    },
+    "recursive-self-improvement": {
+      "name": "Recursive Self Improvement",
+      "zip_url": "https://api.skillhub.cn/api/v1/download?slug=recursive-self-improvement",
+      "source": "community",
+      "version": "1.0.0",
+      "installedAt": "2026-07-05T07:31:38Z"
+    },
+    "fullstack-companion": {
+      "name": "全栈开发伴侣",
+      "zip_url": "https://api.skillhub.cn/api/v1/download?slug=fullstack-companion",
+      "source": "community",
+      "version": "1.0.0",
+      "installedAt": "2026-07-05T07:34:10Z"
+    },
+    "self-improving": {
+      "name": "Self-Improving + Proactive Agent",
+      "zip_url": "https://api.skillhub.cn/api/v1/download?slug=self-improving",
+      "source": "community",
+      "version": "1.2.16",
+      "installedAt": "2026-07-05T08:02:28Z"
+    }
+  }
+}
