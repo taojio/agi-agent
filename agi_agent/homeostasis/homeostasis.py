@@ -588,9 +588,20 @@ class AutonomousGoalGenerator:
         return emergent_goals
 
     def _derive_goal_from_problem(self, problem, free_energy, novelty):
-        need_name = problem['need']
-        severity = problem['severity']
-        urgency = problem['urgency']
+        if isinstance(problem, str):
+            return {
+                "id": f"goal_str_{len(self.goal_history) + 1}",
+                "type": "address_issue",
+                "priority": 0.5,
+                "context": {"problem": problem, "source": "emergent"},
+                "target": "monitor_system",
+                "status": "active",
+                "urgency": 0.5,
+                "hierarchy": "cognitive"
+            }
+        need_name = problem.get('need', 'unknown')
+        severity = problem.get('severity', 0.5)
+        urgency = problem.get('urgency', 0.5)
         
         goal_type_map = {
             'energy': 'maintain_energy',
@@ -667,9 +678,16 @@ class AutonomousGoalGenerator:
         
         capability_assessment = None
         if self.self_model is not None:
-            capability_assessment = self.self_model.assess_capability_for_goal(goal['type'])
+            if hasattr(self.self_model, 'assess_capability_for_goal'):
+                capability_assessment = self.self_model.assess_capability_for_goal(goal['type'])
+            elif hasattr(self.self_model, 'assess_capability'):
+                raw = self.self_model.assess_capability(goal['type'])
+                capability_assessment = {
+                    'feasibility': raw.get('success_rate', 0.5),
+                    'capability_gaps': {'practice': 0.3} if raw.get('is_weakness') else {}
+                }
         
-        if capability_assessment and capability_assessment['feasibility'] < 0.5:
+        if capability_assessment and capability_assessment.get('feasibility', 1.0) < 0.5:
             for cap_name, gap in capability_assessment['capability_gaps'].items():
                 if gap > 0.2:
                     subgoal = {

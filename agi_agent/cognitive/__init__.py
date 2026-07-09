@@ -11,6 +11,8 @@ from .hierarchical_snn import SensoryEncoder, SensoryBuffer, FeatureExtractor, P
 from .general_stereoscopic_snn import GeneralStereoscopicSNN, ConnectionType, SynapticConnection, CrossConnection, NeuralEnsemble
 from .bio_auditory_snn import CochleaModel, CochlearNucleus, InferiorColliculus, AuditoryCortex, HippocampalMemory as AuditoryHippocampalMemory, BasalGanglia as AuditoryBasalGanglia, BioAuditorySNN
 from .stereoscopic_snn import StereoscopicSNN
+from .module_synaptic_bus import ModuleSynapticBus, NeuralInterface, ModuleSynapse, Spike, SignalType, GlobalOscillator
+from .module_interfaces import INTERFACE_MAP, create_interface, MemoryNeuralInterface, KnowledgeGraphNeuralInterface, DecisionNeuralInterface, ExecutionNeuralInterface, PerceptionNeuralInterface, SecurityNeuralInterface, SoulNeuralInterface, SkillsNeuralInterface, EvolutionNeuralInterface, SelfImprovementNeuralInterface, MetaCognitionNeuralInterface, HomeostasisNeuralInterface
 
 __all__ = ["HierarchicalPredictiveCoding", "CognitiveInferenceLayer", "System1", "System2", "DualSystemCognition", 
            "LIFNeuron", "STDPSynapse", "SpikingLayer", "SpikingNeuralNetwork", "SNNEnhancer",
@@ -20,4 +22,9 @@ __all__ = ["HierarchicalPredictiveCoding", "CognitiveInferenceLayer", "System1",
            "EnhancedSNN", "NeuronType", "SelfOrganizingChaosReservoir",
            "SensoryEncoder", "SensoryBuffer", "FeatureExtractor", "PatternIntegrator", "HippocampalMemory", "BasalGanglia",
            "GeneralStereoscopicSNN", "ConnectionType", "SynapticConnection", "CrossConnection", "NeuralEnsemble",
-           "CochleaModel", "CochlearNucleus", "InferiorColliculus", "AuditoryCortex", "BioAuditorySNN", "StereoscopicSNN"]
+           "CochleaModel", "CochlearNucleus", "InferiorColliculus", "AuditoryCortex", "BioAuditorySNN", "StereoscopicSNN",
+           "ModuleSynapticBus", "NeuralInterface", "ModuleSynapse", "Spike", "SignalType", "GlobalOscillator",
+           "INTERFACE_MAP", "create_interface", "MemoryNeuralInterface", "KnowledgeGraphNeuralInterface", 
+           "DecisionNeuralInterface", "ExecutionNeuralInterface", "PerceptionNeuralInterface", "SecurityNeuralInterface",
+           "SoulNeuralInterface", "SkillsNeuralInterface", "EvolutionNeuralInterface", "SelfImprovementNeuralInterface",
+           "MetaCognitionNeuralInterface", "HomeostasisNeuralInterface"]

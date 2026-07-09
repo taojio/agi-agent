@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw - 登录</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        }
+        .login-card {
+            background: rgba(30, 30, 50, 0.9);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(100, 100, 255, 0.2);
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-logo {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+        .login-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .login-subtitle {
+            color: #888;
+            font-size: 14px;
+        }
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group label {
+            color: #ccc;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid rgba(100, 100, 200, 0.3);
+            border-radius: 10px;
+            background: rgba(20, 20, 40, 0.8);
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #6666ff;
+            box-shadow: 0 0 20px rgba(100, 100, 255, 0.3);
+        }
+        .form-group input::placeholder {
+            color: #555;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #6666ff 0%, #8888ff 100%);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(100, 100, 255, 0.4);
+        }
+        .login-btn:active {
+            transform: translateY(0);
+        }
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .login-footer {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(100, 100, 200, 0.2);
+        }
+        .login-footer p {
+            color: #888;
+            font-size: 14px;
+        }
+        .login-footer a {
+            color: #6666ff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            background: rgba(255, 100, 100, 0.15);
+            border: 1px solid rgba(255, 100, 100, 0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .success-message {
+            background: rgba(100, 255, 150, 0.15);
+            border: 1px solid rgba(100, 255, 150, 0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: #6bff9f;
+            font-size: 14px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .form-options label {
+            color: #888;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .form-options input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+        .form-options a {
+            color: #6666ff;
+            text-decoration: none;
+        }
+        .form-options a:hover {
+            text-decoration: underline;
+        }
+        .password-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .login-card {
+            animation: fadeIn 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">🦾</div>
+                <div class="login-title">OpenClaw</div>
+                <div class="login-subtitle">Autonomous Intelligence Platform</div>
+            </div>
+
+            <div class="error-message" id="errorMsg"></div>
+            <div class="success-message" id="successMsg"></div>
+
+            <form class="login-form" id="loginForm" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="loginEmail">邮箱地址</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">密码</label>
+                    <input type="password" id="loginPassword" placeholder="请输入密码" required>
+                </div>
+                <div class="form-options">
+                    <label><input type="checkbox" id="rememberMe"> 记住我</label>
+                    <a href="#" onclick="showForgotPassword()">忘记密码？</a>
+                </div>
+                <button class="login-btn" id="loginBtn">登录</button>
+            </form>
+
+            <div class="login-footer">
+                <p>还没有账号？<a href="/register">立即注册</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+            const btn = document.getElementById('loginBtn');
+            const errorMsg = document.getElementById('errorMsg');
+
+            errorMsg.style.display = 'none';
+
+            if (!email || !password) {
+                showError('请填写邮箱和密码');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '登录中...';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.access_token) {
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('refresh_token', data.refresh_token || '');
+                    if (rememberMe) {
+                        localStorage.setItem('saved_email', email);
+                    } else {
+                        localStorage.removeItem('saved_email');
+                    }
+                    window.location.href = '/';
+                } else {
+                    showError(data.detail || data.message || '登录失败');
+                }
+            } catch (error) {
+                showError('网络错误，请稍后重试');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '登录';
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('successMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function showForgotPassword() {
+            alert('密码找回功能即将上线');
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', login);
+        document.getElementById('loginForm').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+
+        const savedEmail = localStorage.getItem('saved_email');
+        if (savedEmail) {
+            document.getElementById('loginEmail').value = savedEmail;
+            document.getElementById('rememberMe').checked = true;
+        }
+    </script>
+</body>
+</html>

@@ -80,8 +80,8 @@ We commit to acknowledging receipt of the vulnerability report within 48 hours. 
 
 如有任何安全相关问题，请通过以下方式联系我们：
 
-- GitHub Issues: https://github.com/your-username/agi-agent/issues
-- 项目讨论区: https://github.com/your-username/agi-agent/discussions
+- GitHub Issues: https://github.com/taojio/agi-agent/issues
+- 项目讨论区: https://github.com/taojio/agi-agent/discussions
 
 ## 免责声明 / Disclaimer
 

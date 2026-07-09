@@ -1,0 +1,294 @@
+{
+  "app": {
+    "title": "AGI Agent WebUI",
+    "logo": "AGI Agent",
+    "status": {
+      "offline": "Offline",
+      "online": "Running"
+    },
+    "startBtn": "Start Agent",
+    "stopBtn": "Stop Agent",
+    "introspectBtn": "Trigger Introspection"
+  },
+  "chat": {
+    "title": "💬 Multi-Agent Chat",
+    "channels": {
+      "general": "General",
+      "tasks": "Tasks",
+      "random": "Random",
+      "direct": "Direct"
+    },
+    "onlineAgents": "Online Agents:",
+    "welcome": "Welcome to AGI Agent! I'm ready to assist you.",
+    "inputPlaceholder": "Enter message...",
+    "sendBtn": "Send",
+    "voiceBtn": "Voice Input",
+    "clearBtn": "Clear Chat"
+  },
+  "selfAwareness": {
+    "title": "👁️ Self-Awareness System",
+    "refreshBtn": "Refresh",
+    "sections": {
+      "selfKnowledge": "Self-Referential Knowledge",
+      "identity": "Identity Info",
+      "introspection": "Introspection History"
+    },
+    "metrics": {
+      "selfRecognition": "Self Recognition",
+      "capabilityAwareness": "Capability Awareness",
+      "limitationAwareness": "Limitation Awareness",
+      "existenceAwareness": "Existence Awareness",
+      "temporalContinuity": "Temporal Continuity"
+    },
+    "identity": {
+      "name": "Name",
+      "role": "Role",
+      "goals": "Goals"
+    }
+  },
+  "memory": {
+    "title": "🧠 Memory System",
+    "clearBtn": "Clear",
+    "sections": {
+      "l1": "L1 Sensory Memory",
+      "l2": "L2 Short-term Memory",
+      "l3": "L3 Long-term Memory",
+      "l4": "L4 Semantic Memory"
+    },
+    "stats": {
+      "totalCapacity": "Total Capacity",
+      "used": "Used",
+      "utilization": "Utilization"
+    },
+    "recent": "Recent Memories"
+  },
+  "metrics": {
+    "title": "📊 Real-time Metrics",
+    "labels": {
+      "freeEnergy": "Free Energy",
+      "confidence": "Confidence",
+      "novelty": "Novelty",
+      "entropy": "Entropy",
+      "step": "Step",
+      "latency": "Latency(ms)"
+    }
+  },
+  "thinking": {
+    "title": "🧠 Autonomous Thinking",
+    "sections": {
+      "status": "Thinking Status",
+      "decomposition": "Problem Decomposition",
+      "criticalAnalysis": "Critical Analysis"
+    },
+    "stats": {
+      "mode": "Thinking Mode",
+      "system2": "System 2 Calls",
+      "confidence": "Thinking Confidence"
+    },
+    "inputPlaceholder": "Enter problem...",
+    "decomposeBtn": "Decompose",
+    "criticalInputPlaceholder": "Enter idea...",
+    "criticalBtn": "Analyze"
+  },
+  "decision": {
+    "title": "⚖️ Decision System",
+    "sections": {
+      "stats": "Decision Statistics",
+      "simulator": "Decision Simulator"
+    },
+    "stats": {
+      "count": "Decision Count",
+      "activeGoals": "Active Goals"
+    },
+    "simulator": {
+      "goal": "Goal",
+      "confidence": "Confidence",
+      "riskLevel": "Risk Level",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "makeDecisionBtn": "Make Decision"
+    }
+  },
+  "personality": {
+    "title": "🎭 Personality System",
+    "refreshBtn": "Refresh",
+    "sections": {
+      "signature": "Personality Signature",
+      "traits": "Personality Traits",
+      "values": "Core Values"
+    },
+    "consistency": "Consistency",
+    "traits": {
+      "curiosity": "Curiosity",
+      "assertiveness": "Assertiveness",
+      "cautiousness": "Cautiousness",
+      "creativity": "Creativity",
+      "patience": "Patience"
+    },
+    "values": {
+      "survival": "Survival",
+      "knowledge": "Knowledge",
+      "growth": "Growth"
+    }
+  },
+  "knowledge": {
+    "title": "🌐 Knowledge Graph",
+    "refreshBtn": "Refresh",
+    "stats": {
+      "nodes": "Node Count",
+      "edges": "Edge Count",
+      "clusters": "Cluster Count",
+      "activity": "Activity"
+    },
+    "recent": "Recent Learning"
+  },
+  "learning": {
+    "title": "📈 Learning Progress",
+    "info": {
+      "cycles": "Learning Cycles",
+      "knowledge": "Knowledge Accumulation",
+      "skills": "Skill Mastery"
+    },
+    "progress": {
+      "rl": "Reinforcement Learning",
+      "evolution": "Evolutionary Learning",
+      "meta": "Meta Learning"
+    }
+  },
+  "logs": {
+    "title": "📋 Real-time Logs",
+    "clearBtn": "Clear",
+    "filter": {
+      "all": "All",
+      "info": "Info",
+      "warning": "Warning",
+      "error": "Error"
+    }
+  },
+  "fileIngestion": {
+    "title": "📁 File Ingestion",
+    "refreshBtn": "Refresh",
+    "upload": {
+      "dropZone": "Drop files here or click to select",
+      "supportedFormats": "Supported: TXT, MD, JSON, CSV, PDF, DOCX, MP3, WAV, FLAC, MP4, AVI, MOV"
+    },
+    "search": {
+      "placeholder": "Search file content...",
+      "btn": "Search",
+      "content": "Content Search",
+      "embedding": "Semantic Search"
+    },
+    "stats": {
+      "totalRecords": "Total Records",
+      "typeDistribution": "Type Distribution"
+    },
+    "list": "Ingested Files"
+  },
+  "mental": {
+    "title": "🏗️ Three-Layer Mental Architecture",
+    "layers": {
+      "reflex": "Reflex Layer",
+      "deliberative": "Deliberative Layer",
+      "meta": "Meta-Cognitive Layer"
+    },
+    "reflex": {
+      "spikeRate": "Spike Rate",
+      "ruleMatch": "Rule Match",
+      "response": "Response Count",
+      "totalRules": "Total Rules",
+      "totalPatterns": "Total Patterns",
+      "avgConfidence": "Avg Confidence",
+      "delegateRate": "Delegate Rate"
+    },
+    "deliberative": {
+      "phase": "Current Phase",
+      "mode": "Thinking Mode",
+      "cycles": "Thinking Cycles",
+      "completed": "Completed Cycles",
+      "confidence": "Avg Confidence",
+      "system1": "System 1 Calls",
+      "system2": "System 2 Calls",
+      "solutions": "Solutions Count",
+      "system1Ratio": "System 1 Ratio"
+    },
+    "meta": {
+      "violations": "Safety Violations",
+      "selfModel": "Self Model",
+      "strategy": "Strategy Adjustment",
+      "metaLearning": "Meta Learning",
+      "capability": "Capability Assessment",
+      "name": "Name",
+      "role": "Role",
+      "health": "Health Score",
+      "compLoad": "Computational Load",
+      "memoryUsage": "Memory Usage",
+      "thinkingStrategy": "Thinking Strategy",
+      "actionStrategy": "Action Strategy",
+      "strategyChanges": "Strategy Changes",
+      "learningCycles": "Learning Cycles",
+      "strengths": "Strengths",
+      "weaknesses": "Weaknesses",
+      "avgSuccessRate": "Avg Success Rate"
+    }
+  },
+  "action": {
+    "title": "🚀 Autonomous Action",
+    "stats": {
+      "decomposition": "Task Decomposition",
+      "pathPlanning": "Path Planning",
+      "executions": "Execution Count",
+      "successRate": "Success Rate",
+      "activeGoals": "Active Goals",
+      "exploration": "Exploration"
+    },
+    "controls": {
+      "steps": "Run Steps",
+      "executeBtn": "Execute"
+    }
+  },
+  "evolution": {
+    "title": "🔄 Quad-Level Evolution",
+    "stages": {
+      "micro": "Micro Evolution",
+      "microSub": "Synaptic Level",
+      "meso": "Meso Evolution",
+      "mesoSub": "Rule/Skill Level",
+      "macro": "Macro Evolution",
+      "macroSub": "Architecture Level",
+      "meta": "Meta Evolution",
+      "metaSub": "System Level"
+    },
+    "items": {
+      "reinforcements": "Reinforcements",
+      "ruleUpdates": "Rule Updates",
+      "skillGenerations": "Skill Generations",
+      "optimizations": "Optimizations",
+      "metaOptimizations": "Meta Optimizations"
+    }
+  },
+  "errors": {
+    "serverUnavailable": "Server unavailable",
+    "startFailed": "Failed to start agent, please check server connection",
+    "sendFailed": "Failed to send message, please check network connection",
+    "voiceNotSupported": "Your browser does not support speech recognition",
+    "voiceError": "Speech recognition error, please retry",
+    "saveSettingsFailed": "Failed to save settings",
+    "pluginActionFailed": "Plugin {action} failed",
+    "skillInstallFailed": "Skill {slug} installation failed",
+    "skillUninstallFailed": "Skill {slug} uninstallation failed"
+  },
+  "messages": {
+    "serverRestored": "Server connection restored",
+    "settingsSaved": "Settings saved",
+    "allPluginsLoaded": "All available plugins loaded",
+    "enterSearchKeyword": "Please enter search keyword",
+    "noPlugins": "No plugins available",
+    "noSearchResults": "No results, please enter keyword above to search",
+    "noInstalledSkills": "No installed skills, go to store to search and install"
+  },
+  "language": {
+    "zh": "中文",
+    "en": "English"
+  }
+}

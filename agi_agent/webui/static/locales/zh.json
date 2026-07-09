@@ -1,0 +1,294 @@
+{
+  "app": {
+    "title": "AGI Agent WebUI",
+    "logo": "AGI Agent",
+    "status": {
+      "offline": "未启动",
+      "online": "运行中"
+    },
+    "startBtn": "启动智能体",
+    "stopBtn": "停止智能体",
+    "introspectBtn": "触发内省"
+  },
+  "chat": {
+    "title": "💬 多智能体聊天",
+    "channels": {
+      "general": "综合讨论",
+      "tasks": "任务协作",
+      "random": "自由交流",
+      "direct": "一对一"
+    },
+    "onlineAgents": "在线智能体:",
+    "welcome": "欢迎使用AGI智能体！我已准备就绪，随时为您服务。",
+    "inputPlaceholder": "输入消息...",
+    "sendBtn": "发送",
+    "voiceBtn": "语音输入",
+    "clearBtn": "清空聊天"
+  },
+  "selfAwareness": {
+    "title": "👁️ 自我意识系统",
+    "refreshBtn": "刷新",
+    "sections": {
+      "selfKnowledge": "自我参照知识",
+      "identity": "身份信息",
+      "introspection": "内省历史"
+    },
+    "metrics": {
+      "selfRecognition": "自我识别",
+      "capabilityAwareness": "能力意识",
+      "limitationAwareness": "局限意识",
+      "existenceAwareness": "存在意识",
+      "temporalContinuity": "时间连续性"
+    },
+    "identity": {
+      "name": "名称",
+      "role": "角色",
+      "goals": "目标"
+    }
+  },
+  "memory": {
+    "title": "🧠 记忆系统",
+    "clearBtn": "清空",
+    "sections": {
+      "l1": "L1 瞬时记忆",
+      "l2": "L2 短期记忆",
+      "l3": "L3 长期记忆",
+      "l4": "L4 语义记忆"
+    },
+    "stats": {
+      "totalCapacity": "总容量",
+      "used": "已使用",
+      "utilization": "利用率"
+    },
+    "recent": "最近记忆"
+  },
+  "metrics": {
+    "title": "📊 实时指标",
+    "labels": {
+      "freeEnergy": "自由能",
+      "confidence": "置信度",
+      "novelty": "新颖度",
+      "entropy": "熵",
+      "step": "步数",
+      "latency": "延迟(ms)"
+    }
+  },
+  "thinking": {
+    "title": "🧠 自主思考系统",
+    "sections": {
+      "status": "思考状态",
+      "decomposition": "问题分解",
+      "criticalAnalysis": "批判性分析"
+    },
+    "stats": {
+      "mode": "思考模式",
+      "system2": "系统2调用",
+      "confidence": "思考置信度"
+    },
+    "inputPlaceholder": "输入问题...",
+    "decomposeBtn": "分解",
+    "criticalInputPlaceholder": "输入想法...",
+    "criticalBtn": "分析"
+  },
+  "decision": {
+    "title": "⚖️ 自主决策系统",
+    "sections": {
+      "stats": "决策统计",
+      "simulator": "决策模拟器"
+    },
+    "stats": {
+      "count": "决策次数",
+      "activeGoals": "活跃目标"
+    },
+    "simulator": {
+      "goal": "目标",
+      "confidence": "置信度",
+      "riskLevel": "风险等级",
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "makeDecisionBtn": "做出决策"
+    }
+  },
+  "personality": {
+    "title": "🎭 个性系统",
+    "refreshBtn": "刷新",
+    "sections": {
+      "signature": "个性签名",
+      "traits": "个性特质",
+      "values": "核心价值观"
+    },
+    "consistency": "一致性",
+    "traits": {
+      "curiosity": "好奇心",
+      "assertiveness": "果断性",
+      "cautiousness": "谨慎性",
+      "creativity": "创造力",
+      "patience": "耐心"
+    },
+    "values": {
+      "survival": "生存",
+      "knowledge": "知识",
+      "growth": "成长"
+    }
+  },
+  "knowledge": {
+    "title": "🌐 知识图谱",
+    "refreshBtn": "刷新",
+    "stats": {
+      "nodes": "节点数",
+      "edges": "连接数",
+      "clusters": "聚类数",
+      "activity": "活跃度"
+    },
+    "recent": "最近学习"
+  },
+  "learning": {
+    "title": "📈 学习进度",
+    "info": {
+      "cycles": "学习周期",
+      "knowledge": "知识积累",
+      "skills": "技能掌握"
+    },
+    "progress": {
+      "rl": "强化学习",
+      "evolution": "进化学习",
+      "meta": "元学习"
+    }
+  },
+  "logs": {
+    "title": "📋 实时日志",
+    "clearBtn": "清空",
+    "filter": {
+      "all": "全部",
+      "info": "信息",
+      "warning": "警告",
+      "error": "错误"
+    }
+  },
+  "fileIngestion": {
+    "title": "📁 文件摄入系统",
+    "refreshBtn": "刷新",
+    "upload": {
+      "dropZone": "拖放文件到此处或点击选择",
+      "supportedFormats": "支持格式: TXT, MD, JSON, CSV, PDF, DOCX, MP3, WAV, FLAC, MP4, AVI, MOV"
+    },
+    "search": {
+      "placeholder": "搜索文件内容...",
+      "btn": "搜索",
+      "content": "内容搜索",
+      "embedding": "语义搜索"
+    },
+    "stats": {
+      "totalRecords": "总记录数",
+      "typeDistribution": "类型分布"
+    },
+    "list": "已摄入文件"
+  },
+  "mental": {
+    "title": "🏗️ 三层心智架构",
+    "layers": {
+      "reflex": "反射层",
+      "deliberative": "慎思层",
+      "meta": "元认知层"
+    },
+    "reflex": {
+      "spikeRate": "脉冲率",
+      "ruleMatch": "规则匹配",
+      "response": "响应次数",
+      "totalRules": "规则总数",
+      "totalPatterns": "模式总数",
+      "avgConfidence": "平均置信度",
+      "delegateRate": "委托率"
+    },
+    "deliberative": {
+      "phase": "当前阶段",
+      "mode": "思考模式",
+      "cycles": "思考周期",
+      "completed": "完成周期",
+      "confidence": "平均置信度",
+      "system1": "系统1调用",
+      "system2": "系统2调用",
+      "solutions": "解决方案数",
+      "system1Ratio": "系统1占比"
+    },
+    "meta": {
+      "violations": "安全违规",
+      "selfModel": "自我模型",
+      "strategy": "策略调整",
+      "metaLearning": "元学习",
+      "capability": "能力评估",
+      "name": "名称",
+      "role": "角色",
+      "health": "健康度",
+      "compLoad": "计算负载",
+      "memoryUsage": "内存使用",
+      "thinkingStrategy": "思考策略",
+      "actionStrategy": "行动策略",
+      "strategyChanges": "策略变更",
+      "learningCycles": "学习周期",
+      "strengths": "优势领域",
+      "weaknesses": "劣势领域",
+      "avgSuccessRate": "平均成功率"
+    }
+  },
+  "action": {
+    "title": "🚀 自主行动系统",
+    "stats": {
+      "decomposition": "任务拆解",
+      "pathPlanning": "路径规划",
+      "executions": "执行次数",
+      "successRate": "成功率",
+      "activeGoals": "活跃目标",
+      "exploration": "探索行动"
+    },
+    "controls": {
+      "steps": "运行步数",
+      "executeBtn": "执行"
+    }
+  },
+  "evolution": {
+    "title": "🔄 四级迭代进化",
+    "stages": {
+      "micro": "微进化",
+      "microSub": "突触级",
+      "meso": "中进化",
+      "mesoSub": "规则技能级",
+      "macro": "宏进化",
+      "macroSub": "架构级",
+      "meta": "元进化",
+      "metaSub": "系统级"
+    },
+    "items": {
+      "reinforcements": "强化次数",
+      "ruleUpdates": "规则更新",
+      "skillGenerations": "技能生成",
+      "optimizations": "架构优化",
+      "metaOptimizations": "元优化"
+    }
+  },
+  "errors": {
+    "serverUnavailable": "服务器不可用",
+    "startFailed": "启动智能体失败，请检查服务器连接",
+    "sendFailed": "发送消息失败，请检查网络连接",
+    "voiceNotSupported": "您的浏览器不支持语音识别功能",
+    "voiceError": "语音识别出错，请重试",
+    "saveSettingsFailed": "保存设置失败",
+    "pluginActionFailed": "插件{action}失败",
+    "skillInstallFailed": "技能 {slug} 安装失败",
+    "skillUninstallFailed": "技能 {slug} 卸载失败"
+  },
+  "messages": {
+    "serverRestored": "服务器连接已恢复",
+    "settingsSaved": "设置已保存",
+    "allPluginsLoaded": "已加载所有可用插件",
+    "enterSearchKeyword": "请输入搜索关键词",
+    "noPlugins": "暂无可用插件",
+    "noSearchResults": "暂无搜索结果，请在上方输入关键词搜索",
+    "noInstalledSkills": "暂无已安装的技能，前往商店搜索并安装"
+  },
+  "language": {
+    "zh": "中文",
+    "en": "English"
+  }
+}

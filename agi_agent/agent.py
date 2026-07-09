@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agi_agent.config.settings import DEVICE, EVOLVE_TRIGGER_STEP, SAVE_INTERVAL, EVAL_INTERVAL
 from agi_agent.utils.metrics import calc_free_energy, calc_entropy, calc_kl_divergence, calc_confidence, calc_novelty, calc_convergence_speed
 from agi_agent.perception import GrowingAutoEncoder, MultimodalFusion
-from agi_agent.cognitive import CognitiveInferenceLayer, DualSystemCognition, SNNEnhancer, CausalReasoningEngine, UnifiedCognitiveOrchestrator, ArchitectureMutator, SelfModel, GeneralStereoscopicSNN, EnhancedSNN
+from agi_agent.cognitive import CognitiveInferenceLayer, DualSystemCognition, SNNEnhancer, CausalReasoningEngine, UnifiedCognitiveOrchestrator, ArchitectureMutator, SelfModel, GeneralStereoscopicSNN, EnhancedSNN, ModuleSynapticBus, INTERFACE_MAP
 from agi_agent.learning import MetaLearningLayer, KnowledgeGraph, StructuredKnowledgeIngestor
 from agi_agent.evolution import EvolutionEngine, MetaSkillGenerator, DualLoopEvolution, EvolutionLevel, QuadLevelEvolution
 from agi_agent.execution import ActionExecutionLayer
@@ -157,6 +157,89 @@ class SelfEvolvingAGI:
         self.autonomous_mode = True
         self.last_autonomous_check = time.time()
         self.autonomous_check_interval = 5.0
+
+        self._init_module_synaptic_bus()
+
+    def _init_module_synaptic_bus(self):
+        self.synaptic_bus = ModuleSynapticBus(config={
+            'dt': 1.0,
+            'stdp_enabled': True,
+            'learning_rate': 0.01
+        })
+        
+        for module_id, interface_class in INTERFACE_MAP.items():
+            interface = interface_class()
+            self.synaptic_bus.register_module(module_id, interface)
+        
+        print(f"[OK] ModuleSynapticBus 集成完成")
+        print(f"  - 注册模块: {list(INTERFACE_MAP.keys())}")
+        print(f"  - 突触连接: {len(self.synaptic_bus.synapses)}")
+
+    def _update_synaptic_bus(self):
+        module_states = {
+            'memory': {
+                'total_entries': getattr(self.memory_store, 'total_entries', 0) if hasattr(self.memory_store, 'total_entries') else 0,
+                'active_tier': 'L2'
+            },
+            'knowledge_graph': {
+                'nodes': len(getattr(self.knowledge_graph, 'nodes', {})) if hasattr(self.knowledge_graph, 'nodes') else 0,
+                'edges': len(getattr(self.knowledge_graph, 'edges', {})) if hasattr(self.knowledge_graph, 'edges') else 0
+            },
+            'decision': {
+                'confidence': getattr(self, 'confidence', 0.5),
+                'action_count': len(getattr(self, 'execution_history', []))
+            },
+            'execution': {
+                'status': 'idle',
+                'progress': 0.0
+            },
+            'perception': {
+                'feature_dim': self.perception.get_feature_dim(),
+                'novelty': 0.0,
+                'confidence': 0.8
+            },
+            'security': {
+                'risk_level': 'low',
+                'threat_count': 0
+            },
+            'soul': {
+                'identity': self.soul.to_dict() if hasattr(self.soul, 'to_dict') else {},
+                'goal_count': len(getattr(self.soul, 'goals', {}).nodes) if hasattr(self.soul, 'goals') and hasattr(self.soul.goals, 'nodes') else 0,
+                'personality': {}
+            },
+            'skills': {
+                'skill_count': len(getattr(self.skills_manager, 'skills', {})) if hasattr(self.skills_manager, 'skills') else 0,
+                'active_skills': []
+            },
+            'evolution': {
+                'evolution_count': self.train_step,
+                'fitness': 0.5,
+                'level': 'individual'
+            },
+            'self_improvement': {
+                'performance_score': 85,
+                'issue_count': 0,
+                'improvement_count': 0
+            },
+            'metacognition': {
+                'awareness_level': 0.5,
+                'monitoring_count': 0,
+                'strategy_effectiveness': 0.7
+            },
+            'homeostasis': {
+                'energy_level': 0.75,
+                'resource_usage': {},
+                'stability': 0.9
+            }
+        }
+        
+        self.synaptic_bus.step(module_states)
+
+    def get_synaptic_activity(self):
+        return self.synaptic_bus.get_activity_summary()
+
+    def get_connection_topology(self):
+        return self.synaptic_bus.get_connection_topology()
 
     def _initialize_safety_boundaries(self):
         if not hasattr(self, 'hard_boundary') or self.hard_boundary is None:
@@ -881,21 +964,6 @@ class SelfEvolvingAGI:
                 self.audit_trail.log_entry("system", "weight_migration_failed", {
                     "module": attr_name, "error": str(e)
                 })
-
-    def _update_knowledge_graph(self, feat, pred_feat):
-        feat_squeezed = feat.squeeze(0)
-        pred_squeezed = pred_feat.squeeze(0)
-
-        similar_node, similarity = self.knowledge_graph.find_similar_node(feat_squeezed, threshold=0.5)
-
-        if similar_node is None:
-            node_id = self.knowledge_graph.add_node(feat_squeezed)
-        else:
-            node_id = similar_node
-            self.knowledge_graph.nodes[similar_node]["activation_count"] += 1
-
-        pred_node_id = self.knowledge_graph.add_node(pred_squeezed)
-        self.knowledge_graph.update_edge(node_id, pred_node_id, weight_delta=0.1)
 
     def _compute_reward(self, fe, entropy_val, kl_shift):
         fe_reward = max(0.0, 1.0 - fe / 0.5)

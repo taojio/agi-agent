@@ -1,7 +1,5 @@
 const API_BASE = window.location.origin;
 
-let metricsWebSocket = null;
-let sensorWebSocket = null;
 let isAgentRunning = false;
 let isSensorsEnabled = true;
 let isVoiceRecording = false;
@@ -12,7 +10,6 @@ let lastServerErrorTime = 0;
 
 let currentChannel = 'general';
 let channelMessages = {};
-let onlineAgentsRefreshInterval = null;
 
 function shouldLogServerError() {
     const now = Date.now();
@@ -24,201 +21,329 @@ function shouldLogServerError() {
 }
 
 const dom = {
-    agentStatus: document.getElementById('agentStatus'),
-    statusDot: document.querySelector('.status-dot'),
-    startAgentBtn: document.getElementById('startAgentBtn'),
-    stopAgentBtn: document.getElementById('stopAgentBtn'),
-    chatContainer: document.getElementById('chatContainer'),
     chatInput: document.getElementById('chatInput'),
     sendBtn: document.getElementById('sendBtn'),
+    chatMessages: document.getElementById('chatMessages'),
     voiceBtn: document.getElementById('voiceBtn'),
     clearChatBtn: document.getElementById('clearChatBtn'),
-    sensorToggle: document.getElementById('sensorToggle'),
-    saveSettingsBtn: document.getElementById('saveSettingsBtn'),
-    metricFe: document.getElementById('metricFe'),
-    metricConfidence: document.getElementById('metricConfidence'),
-    metricNovelty: document.getElementById('metricNovelty'),
-    metricEntropy: document.getElementById('metricEntropy'),
-    metricStep: document.getElementById('metricStep'),
-    metricLatency: document.getElementById('metricLatency'),
-    barFe: document.getElementById('barFe'),
-    barConfidence: document.getElementById('barConfidence'),
-    barNovelty: document.getElementById('barNovelty'),
-    barEntropy: document.getElementById('barEntropy'),
-    screenResolution: document.getElementById('screenResolution'),
-    screenColorDepth: document.getElementById('screenColorDepth'),
-    screenRefreshRate: document.getElementById('screenRefreshRate'),
-    audioMicrophone: document.getElementById('audioMicrophone'),
-    audioSpeaker: document.getElementById('audioSpeaker'),
-    audioVolume: document.getElementById('audioVolume'),
-    audioStatus: document.getElementById('audioStatus'),
-    keyboardKeys: document.getElementById('keyboardKeys'),
-    keyboardLayout: document.getElementById('keyboardLayout'),
-    keyboardCaps: document.getElementById('keyboardCaps'),
-    keyboardStatus: document.getElementById('keyboardStatus'),
-    mousePosition: document.getElementById('mousePosition'),
-    mouseScroll: document.getElementById('mouseScroll'),
-    mouseButtons: document.getElementById('mouseButtons'),
-    mouseStatus: document.getElementById('mouseStatus'),
-    settingInputDim: document.getElementById('settingInputDim'),
-    settingMaxSteps: document.getElementById('settingMaxSteps'),
-    settingLogInterval: document.getElementById('settingLogInterval'),
-    settingSaveInterval: document.getElementById('settingSaveInterval'),
-    settingFeThreshold: document.getElementById('settingFeThreshold'),
-    settingFeThresholdValue: document.getElementById('settingFeThresholdValue'),
-    settingNoveltyThreshold: document.getElementById('settingNoveltyThreshold'),
-    settingNoveltyThresholdValue: document.getElementById('settingNoveltyThresholdValue'),
-    settingAutoStart: document.getElementById('settingAutoStart'),
-    settingSensorEnabled: document.getElementById('settingSensorEnabled'),
-    settingVoiceInput: document.getElementById('settingVoiceInput'),
-    settingTheme: document.getElementById('settingTheme'),
+    chatSessionName: document.getElementById('chatSessionName'),
+    sessionList: document.getElementById('sessionList'),
+    newSessionBtn: document.getElementById('newSessionBtn'),
+    exportSessionBtn: document.getElementById('exportSessionBtn'),
+    fastModeToggle: document.getElementById('fastModeToggle'),
+    chatSearchInput: document.getElementById('chatSearchInput'),
+    slashCommands: document.getElementById('slashCommands'),
     
-    reflexStatus: document.getElementById('reflexStatus'),
-    reflexSpikeRate: document.getElementById('reflexSpikeRate'),
-    reflexRuleMatch: document.getElementById('reflexRuleMatch'),
-    reflexResponse: document.getElementById('reflexResponse'),
-    reflexTotalRules: document.getElementById('reflexTotalRules'),
-    reflexTotalPatterns: document.getElementById('reflexTotalPatterns'),
-    reflexAvgConfidence: document.getElementById('reflexAvgConfidence'),
-    reflexDelegateRate: document.getElementById('reflexDelegateRate'),
-    deliberativeStatus: document.getElementById('deliberativeStatus'),
-    delibCycles: document.getElementById('delibCycles'),
-    delibCompleted: document.getElementById('delibCompleted'),
-    delibConfidence: document.getElementById('delibConfidence'),
-    delibSolutions: document.getElementById('delibSolutions'),
-    delibPhase: document.getElementById('delibPhase'),
-    delibMode: document.getElementById('delibMode'),
-    delibSystem1: document.getElementById('delibSystem1'),
-    delibSystem2: document.getElementById('delibSystem2'),
-    delibSystem1Ratio: document.getElementById('delibSystem1Ratio'),
-    metaStatus: document.getElementById('metaStatus'),
-    metaViolations: document.getElementById('metaViolations'),
-    metaStrategyChanges: document.getElementById('metaStrategyChanges'),
-    metaLearningCycles: document.getElementById('metaLearningCycles'),
-    metaSelfName: document.getElementById('metaSelfName'),
-    metaSelfRole: document.getElementById('metaSelfRole'),
-    metaHealthScore: document.getElementById('metaHealthScore'),
-    metaCompLoad: document.getElementById('metaCompLoad'),
-    metaMemoryUsage: document.getElementById('metaMemoryUsage'),
-    metaThinkingStrategy: document.getElementById('metaThinkingStrategy'),
-    metaActionStrategy: document.getElementById('metaActionStrategy'),
-    metaStrengths: document.getElementById('metaStrengths'),
-    metaWeaknesses: document.getElementById('metaWeaknesses'),
-    metaAvgSuccessRate: document.getElementById('metaAvgSuccessRate'),
+    configTabs: document.querySelectorAll('.config-tab'),
+    configSections: document.querySelectorAll('.config-section'),
+    saveConfigBtn: document.getElementById('saveConfigBtn'),
+    resetConfigBtn: document.getElementById('resetConfigBtn'),
+    configTemperature: document.getElementById('configTemperature'),
+    configTemperatureValue: document.getElementById('configTemperatureValue'),
     
-    actionDecomposition: document.getElementById('actionDecomposition'),
-    actionPathPlanning: document.getElementById('actionPathPlanning'),
-    actionExecutions: document.getElementById('actionExecutions'),
-    actionSuccessRate: document.getElementById('actionSuccessRate'),
-    actionActiveGoals: document.getElementById('actionActiveGoals'),
-    actionExploration: document.getElementById('actionExploration'),
+    gatewayStatus: document.getElementById('gatewayStatus'),
+    statusIndicator: document.querySelector('.status-indicator'),
     
-    microReinforcements: document.getElementById('microReinforcements'),
-    mesoRuleUpdates: document.getElementById('mesoRuleUpdates'),
-    mesoSkillGenerations: document.getElementById('mesoSkillGenerations'),
-    macroOptimizations: document.getElementById('macroOptimizations'),
-    metaOptimizations: document.getElementById('metaOptimizations'),
+    refreshBtn: document.getElementById('refreshBtn'),
+    fastModeBtn: document.getElementById('fastModeBtn'),
     
-    securityRules: document.getElementById('securityRules'),
-    securityViolations: document.getElementById('securityViolations'),
-    securityRiskLevel: document.getElementById('securityRiskLevel'),
+    commandPaletteBtn: document.getElementById('commandPaletteBtn'),
+    commandPalette: document.getElementById('commandPalette'),
+    cpSearch: document.getElementById('cpSearch'),
+    cpList: document.getElementById('cpList'),
+    
+    navItems: document.querySelectorAll('.nav-item'),
+    mobileNavItems: document.querySelectorAll('.mobile-nav-item'),
+    views: document.querySelectorAll('.view'),
+    
+    agentList: document.getElementById('agentList'),
+    agentDetailName: document.getElementById('agentDetailName'),
+    agentDetailContent: document.getElementById('agentDetailContent'),
+    newAgentBtn: document.getElementById('newAgentBtn'),
+    
+    sessionsTable: document.getElementById('sessionsTable'),
+    saveAllSessionsBtn: document.getElementById('saveAllSessionsBtn'),
+    exportAllSessionsBtn: document.getElementById('exportAllSessionsBtn'),
+    
+    statActiveAgents: document.getElementById('statActiveAgents'),
+    statConnectedChannels: document.getElementById('statConnectedChannels'),
+    statActiveSessions: document.getElementById('statActiveSessions'),
+    statTokenRate: document.getElementById('statTokenRate'),
+    
+    cpuStatus: document.getElementById('cpuStatus'),
+    cpuUsage: document.getElementById('cpuUsage'),
+    memoryStatus: document.getElementById('memoryStatus'),
+    memoryUsage: document.getElementById('memoryUsage'),
+    gpuStatus: document.getElementById('gpuStatus'),
+    gpuUsage: document.getElementById('gpuUsage'),
+
+    activityList: document.getElementById('activityList'),
+    
+    memoryTierBtns: document.querySelectorAll('.memory-tier-btn'),
+    memorySearchInput: document.getElementById('memorySearchInput'),
+    memoryHeaderTitle: document.getElementById('memoryHeaderTitle'),
+    memoryStats: document.getElementById('memoryStats'),
+    memoryList: document.getElementById('memoryList'),
+    addMemoryBtn: document.getElementById('addMemoryBtn'),
+    
+    soulTabs: document.querySelectorAll('.soul-tab'),
+    soulSections: document.querySelectorAll('.soul-section'),
+    soulName: document.getElementById('soulName'),
+    soulRole: document.getElementById('soulRole'),
+    saveSoulBtn: document.getElementById('saveSoulBtn'),
+    exportSoulBtn: document.getElementById('exportSoulBtn'),
+    
+    tasksStats: document.getElementById('tasksStats'),
+    taskPending: document.getElementById('taskPending'),
+    taskInProgress: document.getElementById('taskInProgress'),
+    taskCompleted: document.getElementById('taskCompleted'),
+    submitTaskBtn: document.getElementById('submitTaskBtn'),
+    
+    evolutionStats: document.getElementById('evolutionStats'),
+    proposalList: document.getElementById('proposalList'),
+    runEvolutionBtn: document.getElementById('runEvolutionBtn'),
+    generateSkillBtn: document.getElementById('generateSkillBtn'),
+    
+    securityHardBoundary: document.getElementById('securityHardBoundary'),
     securityCircuitBreaker: document.getElementById('securityCircuitBreaker'),
+    securityRiskClassifier: document.getElementById('securityRiskClassifier'),
+    securityAudit: document.getElementById('securityAudit'),
+    securityCompliance: document.getElementById('securityCompliance'),
     
-    onlineAgentsList: document.getElementById('onlineAgentsList'),
+    improvementPerformance: document.getElementById('improvementPerformance'),
+    improvementDiagnostic: document.getElementById('improvementDiagnostic'),
+    improvementProposals: document.getElementById('improvementProposals'),
+    improvementSafety: document.getElementById('improvementSafety'),
+    runDiagnosticBtn: document.getElementById('runDiagnosticBtn'),
+    generateProposalsBtn: document.getElementById('generateProposalsBtn'),
     
-    selfSelfRecognition: document.getElementById('selfSelfRecognition'),
-    selfCapabilityAwareness: document.getElementById('selfCapabilityAwareness'),
-    selfLimitationAwareness: document.getElementById('selfLimitationAwareness'),
-    selfExistenceAwareness: document.getElementById('selfExistenceAwareness'),
-    selfTemporalContinuity: document.getElementById('selfTemporalContinuity'),
-    barSelfRecognition: document.getElementById('barSelfRecognition'),
-    barCapabilityAwareness: document.getElementById('barCapabilityAwareness'),
-    barLimitationAwareness: document.getElementById('barLimitationAwareness'),
-    barExistenceAwareness: document.getElementById('barExistenceAwareness'),
-    barTemporalContinuity: document.getElementById('barTemporalContinuity'),
-    identityName: document.getElementById('identityName'),
-    identityRole: document.getElementById('identityRole'),
-    identityGoals: document.getElementById('identityGoals'),
-    introspectionHistory: document.getElementById('introspectionHistory'),
+    skillsList: document.getElementById('skillsList'),
+    loadSkillsBtn: document.getElementById('loadSkillsBtn'),
     
-    thinkingMode: document.getElementById('thinkingMode'),
-    thinkingSystem2: document.getElementById('thinkingSystem2'),
-    thinkingConfidence: document.getElementById('thinkingConfidence'),
-    problemInput: document.getElementById('problemInput'),
-    decomposeBtn: document.getElementById('decomposeBtn'),
-    decomposeResult: document.getElementById('decomposeResult'),
-    criticalInput: document.getElementById('criticalInput'),
-    criticalBtn: document.getElementById('criticalBtn'),
-    criticalResult: document.getElementById('criticalResult'),
+    knowledgeStats: document.getElementById('knowledgeStats'),
+    knowledgeGraph: document.getElementById('knowledgeGraph'),
     
-    decisionCount: document.getElementById('decisionCount'),
-    decisionActiveGoals: document.getElementById('decisionActiveGoals'),
-    simGoal: document.getElementById('simGoal'),
-    simConfidence: document.getElementById('simConfidence'),
-    simConfidenceValue: document.getElementById('simConfidenceValue'),
-    simRiskLevel: document.getElementById('simRiskLevel'),
-    makeDecisionBtn: document.getElementById('makeDecisionBtn'),
-    decisionResult: document.getElementById('decisionResult'),
+    statMemoryTiers: document.getElementById('statMemoryTiers'),
+    statEvolution: document.getElementById('statEvolution'),
+    statFreeEnergy: document.getElementById('statFreeEnergy'),
+    statConfidence: document.getElementById('statConfidence'),
+    statSafety: document.getElementById('statSafety'),
+    statKnowledge: document.getElementById('statKnowledge'),
+    agentInfoName: document.getElementById('agentInfoName'),
+    agentInfoStep: document.getElementById('agentInfoStep'),
+    agentInfoStatus: document.getElementById('agentInfoStatus'),
+    agentInfoDim: document.getElementById('agentInfoDim'),
+    runStepBtn: document.getElementById('runStepBtn'),
     
-    personalitySignature: document.getElementById('personalitySignature'),
-    personalityConsistency: document.getElementById('personalityConsistency'),
-    barTraitCuriosity: document.getElementById('barTraitCuriosity'),
-    barTraitAssertiveness: document.getElementById('barTraitAssertiveness'),
-    barTraitCautiousness: document.getElementById('barTraitCautiousness'),
-    barTraitCreativity: document.getElementById('barTraitCreativity'),
-    barTraitPatience: document.getElementById('barTraitPatience'),
-    barValueSurvival: document.getElementById('barValueSurvival'),
-    barValueKnowledge: document.getElementById('barValueKnowledge'),
-    barValueGrowth: document.getElementById('barValueGrowth'),
-    
-    memL1Count: document.getElementById('memL1Count'),
-    memL2Count: document.getElementById('memL2Count'),
-    memL3Count: document.getElementById('memL3Count'),
-    memL4Count: document.getElementById('memL4Count'),
-    memBarL1: document.getElementById('memBarL1'),
-    memBarL2: document.getElementById('memBarL2'),
-    memBarL3: document.getElementById('memBarL3'),
-    memBarL4: document.getElementById('memBarL4'),
-    memTotalCapacity: document.getElementById('memTotalCapacity'),
-    memUsed: document.getElementById('memUsed'),
-    memUtilization: document.getElementById('memUtilization'),
-    memoryRecentList: document.getElementById('memoryRecentList'),
-    
-    kgNodeCount: document.getElementById('kgNodeCount'),
-    kgEdgeCount: document.getElementById('kgEdgeCount'),
-    kgClusterCount: document.getElementById('kgClusterCount'),
-    kgActivity: document.getElementById('kgActivity'),
-    knowledgeRecentList: document.getElementById('knowledgeRecentList'),
-    
-    learningPercentage: document.getElementById('learningPercentage'),
-    learningCycles: document.getElementById('learningCycles'),
-    learningKnowledge: document.getElementById('learningKnowledge'),
-    learningSkills: document.getElementById('learningSkills'),
-    learningRlProgress: document.getElementById('learningRlProgress'),
-    learningEvoProgress: document.getElementById('learningEvoProgress'),
-    learningMetaProgress: document.getElementById('learningMetaProgress'),
-    barLearningRl: document.getElementById('barLearningRl'),
-    barLearningEvo: document.getElementById('barLearningEvo'),
-    barLearningMeta: document.getElementById('barLearningMeta'),
-    
-    logsList: document.getElementById('logsList'),
-    logLevelFilter: document.getElementById('logLevelFilter'),
-    
-    uploadDropZone: document.getElementById('uploadDropZone'),
-    fileInput: document.getElementById('fileInput'),
-    fileSearchInput: document.getElementById('fileSearchInput'),
-    fileSearchBtn: document.getElementById('fileSearchBtn'),
-    fileSearchType: document.getElementById('fileSearchType'),
-    fileTotalRecords: document.getElementById('fileTotalRecords'),
-    fileTypeDistribution: document.getElementById('fileTypeDistribution'),
-    fileIngestionList: document.getElementById('fileIngestionList'),
-    fileStatusMessage: document.getElementById('fileStatusMessage'),
-    refreshFileStatsBtn: document.getElementById('refreshFileStatsBtn')
+    synapticStats: document.getElementById('synapticStats'),
+    moduleActivityList: document.getElementById('moduleActivityList'),
+    oscillatorDisplay: document.getElementById('oscillatorDisplay'),
+    synapticGraph: document.getElementById('synapticGraph'),
+    signalFlowChart: document.getElementById('signalFlowChart')
 };
 
-let mentalArchitectureRefreshInterval = null;
+let currentSessionId = null;
+let sessions = [];
+let currentMemoryTier = 'L1';
 
+function initEventListeners() {
+    dom.sendBtn.addEventListener('click', sendMessage);
+    dom.chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+    dom.voiceBtn.addEventListener('click', toggleVoiceInput);
+    dom.clearChatBtn.addEventListener('click', clearChat);
+    dom.newSessionBtn.addEventListener('click', createNewSession);
+    dom.exportSessionBtn.addEventListener('click', exportSession);
+    dom.fastModeToggle.addEventListener('click', toggleFastMode);
+    dom.chatSearchInput.addEventListener('input', searchSessions);
+    
+    dom.configTabs.forEach(tab => {
+        tab.addEventListener('click', () => switchConfigTab(tab.dataset.tab));
+    });
+    
+    dom.saveConfigBtn.addEventListener('click', saveConfig);
+    dom.resetConfigBtn.addEventListener('click', resetConfig);
+    
+    if (dom.configTemperature) {
+        dom.configTemperature.addEventListener('input', (e) => {
+            dom.configTemperatureValue.textContent = e.target.value;
+        });
+    }
+    
+    dom.refreshBtn.addEventListener('click', refreshAllData);
+    dom.runStepBtn.addEventListener('click', runAgentStep);
+    
+    dom.commandPaletteBtn.addEventListener('click', openCommandPalette);
+    
+    dom.navItems.forEach(item => {
+        item.addEventListener('click', () => switchView(item.dataset.view));
+    });
+    
+    dom.mobileNavItems.forEach(item => {
+        item.addEventListener('click', () => switchView(item.dataset.view));
+    });
+    
+    dom.newAgentBtn.addEventListener('click', createNewAgent);
+    
+    dom.saveAllSessionsBtn.addEventListener('click', saveAllSessions);
+    dom.exportAllSessionsBtn.addEventListener('click', exportAllSessions);
+    
+    dom.slashCommands.addEventListener('click', (e) => {
+        const cmd = e.target.closest('.slash-command');
+        if (cmd) {
+            dom.chatInput.value = cmd.textContent + ' ';
+            dom.chatInput.focus();
+        }
+    });
+    
+    dom.chatInput.addEventListener('keydown', (e) => {
+        if (e.key === '/' && !dom.chatInput.value) {
+            e.preventDefault();
+            showSlashCommands();
+        }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            openCommandPalette();
+        }
+        if (e.key === 'Escape') {
+            closeCommandPalette();
+        }
+    });
+    
+    dom.memoryTierBtns.forEach(btn => {
+        btn.addEventListener('click', () => switchMemoryTier(btn.dataset.tier));
+    });
+    
+    dom.memorySearchInput.addEventListener('input', searchMemories);
+    dom.addMemoryBtn.addEventListener('click', addMemory);
+    
+    dom.soulTabs.forEach(tab => {
+        tab.addEventListener('click', () => switchSoulTab(tab.dataset.tab));
+    });
+    
+    dom.saveSoulBtn.addEventListener('click', saveSoul);
+    dom.exportSoulBtn.addEventListener('click', exportSoul);
+    
+    dom.submitTaskBtn.addEventListener('click', submitTask);
+    
+    dom.runEvolutionBtn.addEventListener('click', runEvolution);
+    dom.generateSkillBtn.addEventListener('click', generateSkill);
+    
+    dom.runDiagnosticBtn.addEventListener('click', runDiagnostic);
+    dom.generateProposalsBtn.addEventListener('click', generateProposals);
+    
+    dom.loadSkillsBtn.addEventListener('click', loadSkills);
+    
+    window.addEventListener('keydown', handleKeyDown);
+}
 
+function switchView(viewName) {
+    dom.views.forEach(view => {
+        view.style.display = view.id === `view-${viewName}` ? 'block' : 'none';
+    });
+    
+    dom.navItems.forEach(item => {
+        item.classList.toggle('active', item.dataset.view === viewName);
+    });
+    
+    dom.mobileNavItems.forEach(item => {
+        item.classList.toggle('active', item.dataset.view === viewName);
+    });
+    
+    if (viewName === 'overview') {
+        refreshOverview();
+    } else if (viewName === 'chat') {
+        loadSessions();
+    } else if (viewName === 'memory') {
+        loadMemory();
+    } else if (viewName === 'soul') {
+        loadSoul();
+    } else if (viewName === 'tasks') {
+        loadTasks();
+    } else if (viewName === 'evolution') {
+        loadEvolution();
+    } else if (viewName === 'security') {
+        loadSecurity();
+    } else if (viewName === 'selfimprovement') {
+        loadSelfImprovement();
+    } else if (viewName === 'skills') {
+        loadSkills();
+    } else if (viewName === 'knowledge') {
+        loadKnowledge();
+    } else if (viewName === 'synaptic') {
+        loadSynapticData();
+    } else if (viewName === 'sessions') {
+        loadSessions();
+    } else if (viewName === 'agents') {
+        loadAgents();
+    }
+}
+
+function switchConfigTab(tabName) {
+    dom.configTabs.forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+    
+    dom.configSections.forEach(section => {
+        section.style.display = section.id === `config-${tabName}` ? 'block' : 'none';
+    });
+}
+
+function switchMemoryTier(tier) {
+    currentMemoryTier = tier;
+    dom.memoryTierBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tier === tier);
+    });
+    const tierNames = { L1: '情境记忆', L2: '工作记忆', L3: '中间记忆', L4: '学习记忆', L5: '永久记忆' };
+    dom.memoryHeaderTitle.textContent = `${tier} ${tierNames[tier]}`;
+    loadMemory();
+}
+
+function switchSoulTab(tabName) {
+    dom.soulTabs.forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+    
+    dom.soulSections.forEach(section => {
+        section.style.display = section.id === `soul-${tabName}` ? 'block' : 'none';
+    });
+}
+
+function openCommandPalette() {
+    dom.commandPalette.style.display = 'block';
+    dom.cpSearch.focus();
+}
+
+function closeCommandPalette() {
+    dom.commandPalette.style.display = 'none';
+    dom.cpSearch.value = '';
+}
+
+function showSlashCommands() {
+    const commands = [
+        { cmd: '/new', desc: '新建会话' },
+        { cmd: '/clear', desc: '清空聊天' },
+        { cmd: '/save', desc: '保存会话' },
+        { cmd: '/export', desc: '导出会话' },
+        { cmd: '/config', desc: '打开配置' },
+        { cmd: '/agent', desc: '切换Agent' },
+        { cmd: '/memory', desc: '查看记忆' },
+        { cmd: '/soul', desc: '编辑SOUL' },
+        { cmd: '/tasks', desc: '任务看板' }
+    ];
+    
+    dom.slashCommands.innerHTML = commands.map(cmd => 
+        `<span class="slash-command">${cmd.cmd} <small>${cmd.desc}</small></span>`
+    ).join('');
+    
+    setTimeout(() => {
+        dom.slashCommands.innerHTML = '';
+    }, 5000);
+}
 
 async function checkAgentStatus() {
     try {
@@ -229,204 +354,25 @@ async function checkAgentStatus() {
             console.log('Server connection restored');
         }
         isAgentRunning = data.status === 'running';
-        updateAgentStatus(isAgentRunning);
+        updateGatewayStatus(isAgentRunning);
     } catch (error) {
         if (serverAvailable) {
             serverAvailable = false;
             console.warn('Server unavailable:', error.message || error);
         }
+        updateGatewayStatus(false);
     }
 }
 
-function updateAgentStatus(running) {
-    isAgentRunning = running;
-    if (running) {
-        dom.statusDot.classList.remove('offline');
-        dom.statusDot.classList.add('online');
-        dom.agentStatus.querySelector('span:last-child').textContent = '运行中';
-        dom.startAgentBtn.disabled = true;
-        dom.stopAgentBtn.disabled = false;
+function updateGatewayStatus(online) {
+    if (online) {
+        dom.statusIndicator.classList.remove('offline');
+        dom.statusIndicator.classList.add('online');
+        dom.gatewayStatus.querySelector('span:last-child').textContent = 'Gateway 在线';
     } else {
-        dom.statusDot.classList.remove('online');
-        dom.statusDot.classList.add('offline');
-        dom.agentStatus.querySelector('span:last-child').textContent = '未启动';
-        dom.startAgentBtn.disabled = false;
-        dom.stopAgentBtn.disabled = true;
-    }
-}
-
-function initEventListeners() {
-    dom.startAgentBtn.addEventListener('click', startAgent);
-    dom.stopAgentBtn.addEventListener('click', stopAgent);
-    dom.sendBtn.addEventListener('click', sendMessage);
-    dom.chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
-    dom.voiceBtn.addEventListener('click', toggleVoiceInput);
-    dom.clearChatBtn.addEventListener('click', clearChat);
-    dom.sensorToggle.addEventListener('change', (e) => {
-        isSensorsEnabled = e.target.checked;
-        if (isSensorsEnabled) {
-            initSensors();
-        } else {
-            stopSensors();
-        }
-    });
-    dom.saveSettingsBtn.addEventListener('click', saveSettings);
-    
-    dom.settingFeThreshold.addEventListener('input', (e) => {
-        dom.settingFeThresholdValue.textContent = e.target.value;
-    });
-    dom.settingNoveltyThreshold.addEventListener('input', (e) => {
-        dom.settingNoveltyThresholdValue.textContent = e.target.value;
-    });
-    
-    dom.settingTheme.addEventListener('change', (e) => {
-        document.body.className = e.target.value;
-        saveSettings();
-    });
-
-    const scanBtn = document.getElementById('scanPluginsBtn');
-    const loadAllBtn = document.getElementById('loadAllPluginsBtn');
-    if (scanBtn) scanBtn.addEventListener('click', loadPlugins);
-    if (loadAllBtn) loadAllBtn.addEventListener('click', loadAllPlugins);
-
-    // Skills 技能商店
-    const skillSearchBtn = document.getElementById('skillSearchBtn');
-    const skillSearchInput = document.getElementById('skillSearchInput');
-    if (skillSearchBtn) skillSearchBtn.addEventListener('click', searchSkills);
-    if (skillSearchInput) {
-        skillSearchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchSkills();
-        });
-    }
-    document.querySelectorAll('.skills-tab').forEach(tab => {
-        tab.addEventListener('click', () => switchSkillsTab(tab.dataset.tab));
-    });
-
-    // 自我意识面板
-    const refreshSelfAwarenessBtn = document.getElementById('refreshSelfAwarenessBtn');
-    if (refreshSelfAwarenessBtn) refreshSelfAwarenessBtn.addEventListener('click', refreshSelfAwareness);
-    
-    // 思考面板
-    if (dom.decomposeBtn) dom.decomposeBtn.addEventListener('click', decomposeProblem);
-    if (dom.criticalBtn) dom.criticalBtn.addEventListener('click', criticalAnalyze);
-    if (dom.problemInput) {
-        dom.problemInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') decomposeProblem();
-        });
-    }
-    if (dom.criticalInput) {
-        dom.criticalInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') criticalAnalyze();
-        });
-    }
-    
-    // 决策面板
-    if (dom.makeDecisionBtn) dom.makeDecisionBtn.addEventListener('click', simulateDecision);
-    if (dom.simConfidence) {
-        dom.simConfidence.addEventListener('input', (e) => {
-            dom.simConfidenceValue.textContent = e.target.value;
-        });
-    }
-    
-    // 个性面板
-    const refreshPersonalityBtn = document.getElementById('refreshPersonalityBtn');
-    if (refreshPersonalityBtn) refreshPersonalityBtn.addEventListener('click', refreshPersonality);
-    
-    // 记忆面板
-    const clearMemoryBtn = document.getElementById('clearMemoryBtn');
-    if (clearMemoryBtn) clearMemoryBtn.addEventListener('click', clearMemory);
-    
-    // 知识图谱面板
-    const refreshKnowledgeBtn = document.getElementById('refreshKnowledgeBtn');
-    if (refreshKnowledgeBtn) refreshKnowledgeBtn.addEventListener('click', refreshKnowledge);
-    
-    // 日志面板
-    const clearLogsBtn = document.getElementById('clearLogsBtn');
-    if (clearLogsBtn) clearLogsBtn.addEventListener('click', clearLogs);
-    if (dom.logLevelFilter) {
-        dom.logLevelFilter.addEventListener('change', filterLogs);
-    }
-
-    // 文件摄入面板
-    if (dom.uploadDropZone) {
-        dom.uploadDropZone.addEventListener('click', () => dom.fileInput.click());
-        dom.uploadDropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dom.uploadDropZone.classList.add('dragover');
-        });
-        dom.uploadDropZone.addEventListener('dragleave', () => {
-            dom.uploadDropZone.classList.remove('dragover');
-        });
-        dom.uploadDropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dom.uploadDropZone.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFileUpload(files);
-            }
-        });
-    }
-    if (dom.fileInput) {
-        dom.fileInput.addEventListener('change', (e) => {
-            handleFileUpload(e.target.files);
-        });
-    }
-    if (dom.fileSearchBtn) {
-        dom.fileSearchBtn.addEventListener('click', searchFiles);
-    }
-    if (dom.fileSearchInput) {
-        dom.fileSearchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchFiles();
-        });
-    }
-    if (dom.refreshFileStatsBtn) {
-        dom.refreshFileStatsBtn.addEventListener('click', refreshFileStats);
-    }
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('wheel', handleMouseWheel);
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
-}
-
-async function startAgent() {
-    try {
-        const response = await fetch(`${API_BASE}/api/agent/start`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await response.json();
-        if (data.status === 'success') {
-            updateAgentStatus(true);
-            addMessage('agent', data.message);
-            initWebSocket();
-            startMentalArchitectureRefresh();
-        }
-    } catch (error) {
-        console.error('Failed to start agent:', error);
-        addMessage('agent', '启动智能体失败，请检查服务器连接');
-    }
-}
-
-async function stopAgent() {
-    try {
-        const response = await fetch(`${API_BASE}/api/agent/stop`, {
-            method: 'POST'
-        });
-        const data = await response.json();
-        if (data.status === 'success') {
-            updateAgentStatus(false);
-            addMessage('agent', data.message);
-            closeWebSocket();
-            stopMentalArchitectureRefresh();
-            stopOnlineAgentsRefresh();
-        }
-    } catch (error) {
-        console.error('Failed to stop agent:', error);
+        dom.statusIndicator.classList.remove('online');
+        dom.statusIndicator.classList.add('offline');
+        dom.gatewayStatus.querySelector('span:last-child').textContent = 'Gateway 离线';
     }
 }
 
@@ -434,61 +380,102 @@ async function sendMessage() {
     const content = dom.chatInput.value.trim();
     if (!content) return;
     
-    if (currentChannel === 'direct') {
-        addMessage('user', content);
-        dom.chatInput.value = '';
-        
-        try {
-            const response = await fetch(`${API_BASE}/api/chat/send`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content })
-            });
-            const data = await response.json();
-            addMessage('agent', data.response);
-        } catch (error) {
-            console.error('Failed to send message:', error);
-            addMessage('agent', '发送消息失败，请检查网络连接');
-        }
-    } else {
-        await sendMessageToChannel(content);
+    addMessage('user', content);
+    dom.chatInput.value = '';
+    
+    if (content.startsWith('/')) {
+        handleSlashCommand(content);
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/chat/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        });
+        const data = await response.json();
+        addMessage('assistant', data.response);
+    } catch (error) {
+        console.error('Failed to send message:', error);
+        addMessage('assistant', '发送消息失败，请检查网络连接');
+    }
+}
+
+function handleSlashCommand(cmd) {
+    switch (cmd.split(' ')[0]) {
+        case '/new':
+            createNewSession();
+            break;
+        case '/clear':
+            clearChat();
+            break;
+        case '/save':
+            saveCurrentSession();
+            break;
+        case '/export':
+            exportSession();
+            break;
+        case '/config':
+            switchView('config');
+            break;
+        case '/agent':
+            switchView('agents');
+            break;
+        case '/memory':
+            switchView('memory');
+            break;
+        case '/soul':
+            switchView('soul');
+            break;
+        case '/tasks':
+            switchView('tasks');
+            break;
+        case '/evolution':
+            switchView('evolution');
+            break;
+        default:
+            addMessage('assistant', `未知命令: ${cmd}`);
     }
 }
 
 function addMessage(role, content) {
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${role}-message`;
+    messageDiv.className = `message ${role}`;
     
+    let avatarBg = '';
     let icon = '';
-    if (role === 'agent') {
-        icon = '<span class="agent-icon">🤖</span>';
+    
+    if (role === 'user') {
+        avatarBg = 'var(--primary-color)';
+        icon = '👤';
+    } else if (role === 'assistant') {
+        avatarBg = 'var(--secondary-color)';
+        icon = '🤖';
     }
     
     messageDiv.innerHTML = `
+        <div class="message-avatar" style="background: ${avatarBg}">${icon}</div>
         <div class="message-content">
-            ${icon}
-            <p>${content}</p>
+            <div class="message-bubble">${content}</div>
         </div>
     `;
     
-    dom.chatContainer.appendChild(messageDiv);
-    dom.chatContainer.scrollTop = dom.chatContainer.scrollHeight;
+    dom.chatMessages.appendChild(messageDiv);
+    dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
 }
 
 function clearChat() {
-    dom.chatContainer.innerHTML = `
-        <div class="message agent-message">
-            <div class="message-content">
-                <span class="agent-icon">🤖</span>
-                <p>欢迎使用AGI智能体！我已准备就绪，随时为您服务。</p>
-            </div>
+    dom.chatMessages.innerHTML = `
+        <div class="message system-message">
+            <p>欢迎使用 OpenClaw！开始与您的智能体对话吧。</p>
         </div>
     `;
 }
 
 function toggleVoiceInput() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        addMessage('agent', '您的浏览器不支持语音识别功能');
+        addMessage('assistant', '您的浏览器不支持语音识别功能');
         return;
     }
     
@@ -510,7 +497,7 @@ function startVoiceRecording() {
         isVoiceRecording = true;
         dom.voiceBtn.style.backgroundColor = '#f85149';
         dom.voiceBtn.style.color = 'white';
-        addMessage('agent', '正在听...请说话');
+        addMessage('assistant', '正在听...请说话');
     };
     
     recognition.onresult = (event) => {
@@ -522,7 +509,7 @@ function startVoiceRecording() {
     
     recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
-        addMessage('agent', '语音识别出错，请重试');
+        addMessage('assistant', '语音识别出错，请重试');
         stopVoiceRecording();
     };
     
@@ -543,1709 +530,1315 @@ function stopVoiceRecording() {
     dom.voiceBtn.style.color = '';
 }
 
-function initWebSocket() {
-    closeWebSocket();
-
-    if (!isAgentRunning) {
-        return;
-    }
-
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-
-    metricsWebSocket = new WebSocket(`${wsProtocol}//${window.location.host}/ws/metrics`);
-    metricsWebSocket.onopen = () => {
-        console.log('Metrics WebSocket connected');
-    };
-    metricsWebSocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'metrics') {
-            updateMetrics(data.data);
-        }
-    };
-    metricsWebSocket.onerror = (error) => {
-        if (isAgentRunning) console.warn('Metrics WebSocket error:', error?.message || error);
-    };
-    metricsWebSocket.onclose = function() {
-        console.log('Metrics WebSocket disconnected, reconnecting...');
-        setTimeout(() => {
-            if (isAgentRunning) {
-                initWebSocket();
-            }
-        }, 3000);
-    };
-
-    sensorWebSocket = new WebSocket(`${wsProtocol}//${window.location.host}/ws/sensors`);
-    sensorWebSocket.onopen = () => {
-        console.log('Sensors WebSocket connected');
-    };
-    sensorWebSocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log('Sensor ack:', data);
-    };
-    sensorWebSocket.onerror = (error) => {
-        if (isSensorsEnabled) console.warn('Sensors WebSocket error:', error?.message || error);
-    };
-    sensorWebSocket.onclose = function() {
-        console.log('Sensors WebSocket disconnected, reconnecting...');
-        setTimeout(() => {
-            if (isAgentRunning) {
-                initWebSocket();
-            }
-        }, 3000);
-    };
+function createNewSession() {
+    clearChat();
+    dom.chatSessionName.textContent = '新会话';
+    currentSessionId = null;
 }
 
-function closeWebSocket() {
-    if (metricsWebSocket) {
-        metricsWebSocket.close();
-        metricsWebSocket = null;
-    }
-    if (sensorWebSocket) {
-        sensorWebSocket.close();
-        sensorWebSocket = null;
-    }
-}
-
-function updateMetrics(metrics) {
-    dom.metricFe.textContent = metrics.free_energy?.toFixed(4) || '--';
-    dom.metricConfidence.textContent = metrics.confidence?.toFixed(4) || '--';
-    dom.metricNovelty.textContent = metrics.novelty?.toFixed(4) || '--';
-    dom.metricEntropy.textContent = metrics.entropy?.toFixed(4) || '--';
-    dom.metricStep.textContent = metrics.step?.toString() || '--';
-    dom.metricLatency.textContent = metrics.latency?.toFixed(1) || '--';
-    
-    dom.barFe.style.width = `${Math.min(100, (metrics.free_energy || 0) * 100)}%`;
-    dom.barConfidence.style.width = `${Math.min(100, (metrics.confidence || 0) * 100)}%`;
-    dom.barNovelty.style.width = `${Math.min(100, (metrics.novelty || 0) * 100)}%`;
-    dom.barEntropy.style.width = `${Math.min(100, (metrics.entropy || 0) * 20)}%`;
-}
-
-function initSensors() {
-    updateScreenInfo();
-    
-    navigator.mediaDevices.getUserMedia({ audio: true })
-        .then((stream) => {
-            dom.audioMicrophone.textContent = '已连接';
-            dom.audioStatus.textContent = '活动';
-            dom.audioStatus.classList.add('active');
-            const audioContext = new AudioContext();
-            const source = audioContext.createMediaStreamSource(stream);
-            source.connect(audioContext.destination);
-        })
-        .catch(() => {
-            dom.audioMicrophone.textContent = '未授权';
-            dom.audioStatus.textContent = '未连接';
-            dom.audioStatus.classList.remove('active');
-        });
-    
-    dom.audioSpeaker.textContent = '可用';
-    dom.audioVolume.textContent = '50%';
-    
-    dom.keyboardLayout.textContent = navigator.language || 'zh-CN';
-    dom.keyboardCaps.textContent = '关闭';
-}
-
-function stopSensors() {
-    dom.screenResolution.textContent = '--';
-    dom.screenColorDepth.textContent = '--';
-    dom.screenRefreshRate.textContent = '--';
-    dom.audioMicrophone.textContent = '--';
-    dom.audioSpeaker.textContent = '--';
-    dom.audioVolume.textContent = '--';
-    dom.keyboardKeys.textContent = '无';
-    dom.keyboardLayout.textContent = '--';
-    dom.keyboardCaps.textContent = '--';
-    dom.mousePosition.textContent = '--';
-    dom.mouseScroll.textContent = '--';
-    dom.mouseButtons.textContent = '--';
-}
-
-function updateScreenInfo() {
-    dom.screenResolution.textContent = `${window.screen.width} x ${window.screen.height}`;
-    dom.screenColorDepth.textContent = `${window.screen.colorDepth}位`;
-    
-    const mediaQuery = window.matchMedia('(min-resolution: 96dpi)');
-    dom.screenRefreshRate.textContent = '60Hz';
-}
-
-function handleKeyDown(e) {
-    if (!isSensorsEnabled) return;
-    
-    dom.keyboardStatus.textContent = '活动';
-    dom.keyboardKeys.textContent = e.key;
-    
-    if (e.getModifierState('CapsLock')) {
-        dom.keyboardCaps.textContent = '开启';
-    }
-    
-    sendSensorData('keyboard', {
-        key: e.key,
-        code: e.code,
-        type: 'keydown',
-        capsLock: e.getModifierState('CapsLock'),
-        shiftKey: e.shiftKey,
-        ctrlKey: e.ctrlKey,
-        altKey: e.altKey
-    });
-}
-
-function handleKeyUp(e) {
-    if (!isSensorsEnabled) return;
-    
-    setTimeout(() => {
-        const activeElement = document.activeElement;
-        if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
-            dom.keyboardStatus.textContent = '空闲';
-            dom.keyboardKeys.textContent = '无';
-        }
-    }, 1000);
-    
-    sendSensorData('keyboard', {
-        key: e.key,
-        code: e.code,
-        type: 'keyup',
-        capsLock: e.getModifierState('CapsLock')
-    });
-}
-
-function handleMouseMove(e) {
-    if (!isSensorsEnabled) return;
-    
-    dom.mousePosition.textContent = `${e.clientX}, ${e.clientY}`;
-    
-    sendSensorData('mouse', {
-        x: e.clientX,
-        y: e.clientY,
-        screenX: e.screenX,
-        screenY: e.screenY,
-        type: 'mousemove'
-    });
-}
-
-function handleMouseWheel(e) {
-    if (!isSensorsEnabled) return;
-    
-    dom.mouseScroll.textContent = e.deltaY > 0 ? '向下' : '向上';
-    
-    sendSensorData('mouse', {
-        deltaX: e.deltaX,
-        deltaY: e.deltaY,
-        type: 'wheel'
-    });
-}
-
-function handleMouseDown(e) {
-    if (!isSensorsEnabled) return;
-    
-    const buttons = [];
-    if (e.button === 0) buttons.push('左键');
-    if (e.button === 1) buttons.push('中键');
-    if (e.button === 2) buttons.push('右键');
-    dom.mouseButtons.textContent = buttons.join(', ');
-    
-    sendSensorData('mouse', {
-        button: e.button,
-        type: 'mousedown'
-    });
-}
-
-function handleMouseUp(e) {
-    if (!isSensorsEnabled) return;
-    
-    dom.mouseButtons.textContent = '--';
-    
-    sendSensorData('mouse', {
-        button: e.button,
-        type: 'mouseup'
-    });
-}
-
-function sendSensorData(type, data) {
-    if (sensorWebSocket && sensorWebSocket.readyState === WebSocket.OPEN) {
-        sensorWebSocket.send(JSON.stringify({ type, data }));
-    }
-    
-    fetch(`${API_BASE}/api/sensors/data`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, data })
-    }).catch((e) => { /* server unavailable */ });
-}
-
-async function loadSettings() {
-    try {
-        const response = await fetch(`${API_BASE}/api/settings`);
-        const settings = await response.json();
-        
-        dom.settingInputDim.value = settings.input_dim || 16;
-        dom.settingMaxSteps.value = settings.max_steps || 1000;
-        dom.settingLogInterval.value = settings.log_interval || 20;
-        dom.settingSaveInterval.value = settings.save_interval || 1000;
-        dom.settingFeThreshold.value = settings.free_energy_threshold || 0.3;
-        dom.settingFeThresholdValue.textContent = settings.free_energy_threshold || 0.3;
-        dom.settingNoveltyThreshold.value = settings.novelty_threshold || 0.5;
-        dom.settingNoveltyThresholdValue.textContent = settings.novelty_threshold || 0.5;
-        dom.settingAutoStart.checked = settings.auto_start || false;
-        dom.settingSensorEnabled.checked = settings.sensor_enabled || true;
-        dom.settingVoiceInput.checked = settings.voice_input || false;
-        dom.settingTheme.value = settings.theme || 'dark';
-        
-        document.body.className = settings.theme || 'dark';
-    } catch (error) {
-        console.error('Failed to load settings:', error);
-    }
-}
-
-async function saveSettings() {
-    const settings = {
-        input_dim: parseInt(dom.settingInputDim.value),
-        max_steps: parseInt(dom.settingMaxSteps.value) || 0,
-        log_interval: parseInt(dom.settingLogInterval.value),
-        save_interval: parseInt(dom.settingSaveInterval.value),
-        free_energy_threshold: parseFloat(dom.settingFeThreshold.value),
-        novelty_threshold: parseFloat(dom.settingNoveltyThreshold.value),
-        auto_start: dom.settingAutoStart.checked,
-        sensor_enabled: dom.settingSensorEnabled.checked,
-        voice_input: dom.settingVoiceInput.checked,
-        theme: dom.settingTheme.value
-    };
+async function saveCurrentSession() {
+    const messages = Array.from(dom.chatMessages.children).map(msg => {
+        const role = msg.classList.contains('user') ? 'user' : 'assistant';
+        const text = msg.querySelector('.message-bubble')?.textContent || '';
+        return { role, content: text };
+    }).filter(m => m.content.trim());
     
     try {
-        const response = await fetch(`${API_BASE}/api/settings`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(settings)
-        });
-        const data = await response.json();
-        if (data.status === 'success') {
-            addMessage('agent', '设置已保存');
-        }
-    } catch (error) {
-        console.error('Failed to save settings:', error);
-        addMessage('agent', '保存设置失败');
-    }
-}
-
-async function loadPlugins() {
-    try {
-        const [availableRes, loadedRes] = await Promise.all([
-            fetch(`${API_BASE}/api/plugins/available`),
-            fetch(`${API_BASE}/api/plugins/loaded`)
-        ]);
-        const availableData = await availableRes.json();
-        const loadedData = await loadedRes.json();
-
-        const pluginList = document.getElementById('pluginList');
-        if (!pluginList) return;
-
-        const loadedMap = {};
-        (loadedData.plugins || []).forEach(p => { loadedMap[p.name] = p; });
-
-        const allPlugins = (availableData.plugins || []).map(p => ({
-            ...p,
-            ...loadedMap[p.name]
-        }));
-
-        Object.values(loadedMap).forEach(p => {
-            if (!allPlugins.find(a => a.name === p.name)) {
-                allPlugins.unshift(p);
-            }
-        });
-
-        pluginList.innerHTML = allPlugins.map(plugin => {
-            const status = plugin.status || 'unloaded';
-            const isLoaded = status !== 'unloaded';
-            const isActive = status === 'active';
-            return `
-                <div class="plugin-item">
-                    <div class="plugin-item-header">
-                        <span class="plugin-item-name">${plugin.name}</span>
-                        <span class="plugin-item-status plugin-status-${status}">${status}</span>
-                    </div>
-                    <span class="plugin-item-desc">${plugin.description || plugin.type || ''}</span>
-                    <div class="plugin-item-actions">
-                        ${!isLoaded ? `<button onclick="pluginAction('load', '${plugin.name}')">加载</button>` : ''}
-                        ${isLoaded && !isActive ? `<button onclick="pluginAction('activate', '${plugin.name}')">激活</button>` : ''}
-                        ${isActive ? `<button onclick="pluginAction('deactivate', '${plugin.name}')">停用</button>` : ''}
-                        ${isLoaded ? `<button onclick="pluginAction('unload', '${plugin.name}')">卸载</button>` : ''}
-                        ${isLoaded ? `<button onclick="pluginAction('reload', '${plugin.name}')">重载</button>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        if (allPlugins.length === 0) {
-            pluginList.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px;">暂无可用插件</div>';
-        }
-    } catch (error) {
-        console.error('Failed to load plugins:', error);
-    }
-}
-
-async function pluginAction(action, pluginName) {
-    const url = action === 'load'
-        ? `${API_BASE}/api/plugins/load?plugin_name=${encodeURIComponent(pluginName)}`
-        : `${API_BASE}/api/plugins/${encodeURIComponent(pluginName)}/${action}`;
-
-    try {
-        const response = await fetch(url, { method: 'POST' });
-        const data = await response.json();
-        if (data.success === false || data.error) {
-            addMessage('agent', `插件${action}失败: ${data.error || data.detail || '未知错误'}`);
-        }
-        await loadPlugins();
-    } catch (error) {
-        console.error(`Plugin ${action} failed:`, error);
-        addMessage('agent', `插件${action}失败: ${error.message}`);
-    }
-}
-
-async function loadAllPlugins() {
-    try {
-        const response = await fetch(`${API_BASE}/api/plugins/load_all`, { method: 'POST' });
-        const data = await response.json();
-        await loadPlugins();
-        addMessage('agent', '已加载所有可用插件');
-    } catch (error) {
-        console.error('Failed to load all plugins:', error);
-        addMessage('agent', '加载所有插件失败');
-    }
-}
-
-// ============ Skills 技能商店 ============
-
-let skillsStoreData = [];
-let skillsInstalledData = [];
-let skillsCurrentTab = 'store';
-
-async function initSkillsStore() {
-    await loadSkillsStatus();
-    await loadInstalledSkills();
-}
-
-async function loadSkillsStatus() {
-    try {
-        const response = await fetch(`${API_BASE}/api/skills/status`);
-        const data = await response.json();
-        const info = document.getElementById('skillsStoreInfo');
-        if (!info) return;
-        if (data.available) {
-            info.textContent = `SkillHub v${data.cli_version} | 已安装 ${data.installed_count}`;
-            info.classList.add('connected');
-        } else {
-            info.textContent = 'SkillHub 未安装';
-            info.classList.remove('connected');
-        }
-    } catch (error) {
-        console.error('Failed to load skills status:', error);
-    }
-}
-
-async function searchSkills() {
-    const input = document.getElementById('skillSearchInput');
-    if (!input) return;
-    const query = input.value.trim();
-    if (!query) {
-        addMessage('agent', '请输入搜索关键词');
-        return;
-    }
-
-    const storeList = document.getElementById('skillsStoreList');
-    if (storeList) storeList.innerHTML = '<div class="skills-loading">搜索中...</div>';
-
-    // 切换到商店标签
-    switchSkillsTab('store');
-
-    try {
-        const response = await fetch(`${API_BASE}/api/skills/search?q=${encodeURIComponent(query)}&limit=20`);
-        const data = await response.json();
-        if (data.success) {
-            skillsStoreData = data.results || [];
-            renderSkillCards();
-        } else {
-            if (storeList) storeList.innerHTML = `<div class="skills-empty">${data.error || '搜索失败'}</div>`;
-        }
-    } catch (error) {
-        console.error('Skills search failed:', error);
-        if (storeList) storeList.innerHTML = '<div class="skills-empty">搜索失败，请检查网络连接</div>';
-    }
-}
-
-function renderSkillCards() {
-    const storeList = document.getElementById('skillsStoreList');
-    if (!storeList) return;
-
-    if (skillsStoreData.length === 0) {
-        storeList.innerHTML = '<div class="skills-empty">暂无搜索结果，请在上方输入关键词搜索</div>';
-        return;
-    }
-
-    const installedSlugs = new Set(skillsInstalledData.map(s => s.slug));
-
-    storeList.innerHTML = skillsStoreData.map(skill => {
-        const desc = (skill.description || '').split('\n')[0];
-        const isInstalled = installedSlugs.has(skill.slug);
-        const source = skill.source || 'community';
-        return `
-            <div class="skill-card">
-                <div class="skill-card-header">
-                    <span class="skill-card-name">${escapeHtml(skill.name)}</span>
-                    <div class="skill-card-meta">
-                        <span class="skill-card-version">v${escapeHtml(skill.version || '?')}</span>
-                        <span class="skill-card-badge skill-badge-source">${escapeHtml(source)}</span>
-                        ${isInstalled ? '<span class="skill-card-badge skill-badge-installed">已安装</span>' : ''}
-                    </div>
-                </div>
-                <div class="skill-card-slug">${escapeHtml(skill.slug)}</div>
-                <div class="skill-card-desc">${escapeHtml(desc)}</div>
-                <div class="skill-card-actions">
-                    ${isInstalled
-                        ? `<button class="btn-uninstall" onclick="uninstallSkill('${escapeHtml(skill.slug)}')">卸载</button>`
-                        : `<button class="btn-install" onclick="installSkill('${escapeHtml(skill.slug)}')">安装</button>`
-                    }
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-async function loadInstalledSkills() {
-    try {
-        const response = await fetch(`${API_BASE}/api/skills/installed`);
-        const data = await response.json();
-        skillsInstalledData = data.skills || [];
-        renderInstalledSkills();
-        loadSkillsStatus();
-    } catch (error) {
-        console.error('Failed to load installed skills:', error);
-    }
-}
-
-function renderInstalledSkills() {
-    const list = document.getElementById('skillsInstalledList');
-    if (!list) return;
-
-    if (skillsInstalledData.length === 0) {
-        list.innerHTML = '<div class="skills-empty">暂无已安装的技能，前往商店搜索并安装</div>';
-        return;
-    }
-
-    list.innerHTML = skillsInstalledData.map(skill => {
-        const desc = (skill.description || '').split('\n')[0];
-        return `
-            <div class="skill-card">
-                <div class="skill-card-header">
-                    <span class="skill-card-name">${escapeHtml(skill.name)}</span>
-                    <div class="skill-card-meta">
-                        ${skill.version ? `<span class="skill-card-version">v${escapeHtml(skill.version)}</span>` : ''}
-                        <span class="skill-card-badge skill-badge-installed">已安装</span>
-                    </div>
-                </div>
-                <div class="skill-card-slug">${escapeHtml(skill.slug)}</div>
-                <div class="skill-card-desc">${escapeHtml(desc)}</div>
-                <div class="skill-card-actions">
-                    <button class="btn-uninstall" onclick="uninstallSkill('${escapeHtml(skill.slug)}')">卸载</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function switchSkillsTab(tab) {
-    skillsCurrentTab = tab;
-    document.querySelectorAll('.skills-tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.tab === tab);
-    });
-    const storeList = document.getElementById('skillsStoreList');
-    const installedList = document.getElementById('skillsInstalledList');
-    if (storeList) storeList.style.display = tab === 'store' ? 'flex' : 'none';
-    if (installedList) installedList.style.display = tab === 'installed' ? 'flex' : 'none';
-    if (tab === 'installed') loadInstalledSkills();
-}
-
-async function installSkill(slug) {
-    addMessage('agent', `正在安装技能: ${slug}...`);
-    try {
-        const response = await fetch(`${API_BASE}/api/skills/install?slug=${encodeURIComponent(slug)}`, { method: 'POST' });
-        const data = await response.json();
-        if (response.ok && data.success !== false) {
-            addMessage('agent', `技能 ${slug} 安装成功！`);
-            await loadInstalledSkills();
-            renderSkillCards();
-        } else {
-            const err = data.detail || data.error || '安装失败';
-            addMessage('agent', `技能 ${slug} 安装失败: ${err}`);
-        }
-    } catch (error) {
-        console.error('Install skill failed:', error);
-        addMessage('agent', `技能 ${slug} 安装失败: ${error.message}`);
-    }
-}
-
-async function uninstallSkill(slug) {
-    addMessage('agent', `正在卸载技能: ${slug}...`);
-    try {
-        const response = await fetch(`${API_BASE}/api/skills/${encodeURIComponent(slug)}`, { method: 'DELETE' });
-        const data = await response.json();
-        if (response.ok && data.success !== false) {
-            addMessage('agent', `技能 ${slug} 已卸载`);
-            await loadInstalledSkills();
-            renderSkillCards();
-        } else {
-            const err = data.detail || data.error || '卸载失败';
-            addMessage('agent', `技能 ${slug} 卸载失败: ${err}`);
-        }
-    } catch (error) {
-        console.error('Uninstall skill failed:', error);
-        addMessage('agent', `技能 ${slug} 卸载失败: ${error.message}`);
-    }
-}
-
-function escapeHtml(str) {
-    if (str == null) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function startMentalArchitectureRefresh() {
-    if (mentalArchitectureRefreshInterval) {
-        clearInterval(mentalArchitectureRefreshInterval);
-    }
-    mentalArchitectureRefreshInterval = setInterval(refreshMentalArchitectureData, 3000);
-    refreshMentalArchitectureData();
-}
-
-function stopMentalArchitectureRefresh() {
-    if (mentalArchitectureRefreshInterval) {
-        clearInterval(mentalArchitectureRefreshInterval);
-        mentalArchitectureRefreshInterval = null;
-    }
-}
-
-async function refreshMentalArchitectureData() {
-    try {
-        const [archRes, actionRes, evolutionRes, securityRes] = await Promise.all([
-            fetch(`${API_BASE}/api/mental-architecture/status`),
-            fetch(`${API_BASE}/api/autonomous-action/status`),
-            fetch(`${API_BASE}/api/evolution/status`),
-            fetch(`${API_BASE}/api/security/status`)
-        ]);
-        
-        const archData = await archRes.json();
-        const actionData = await actionRes.json();
-        const evolutionData = await evolutionRes.json();
-        const securityData = await securityRes.json();
-        
-        updateMentalArchitecture(archData);
-        updateAutonomousAction(actionData);
-        updateEvolution(evolutionData);
-        updateSecurity(securityData);
-    } catch (error) {
-        console.warn('Mental architecture refresh failed:', error.message || error);
-    }
-}
-
-function updateMentalArchitecture(data) {
-    if (!data) return;
-    
-    const reflex = data.reflex || {};
-    const spiking = reflex.spiking_activity || {};
-    const reflexRules = reflex.rule_stats || {};
-    const reflexInstinct = reflex.instinct_stats || {};
-    
-    if (dom.reflexStatus) dom.reflexStatus.textContent = reflex.is_active ? '活跃' : '休眠';
-    if (dom.reflexSpikeRate) dom.reflexSpikeRate.textContent = (spiking.overall_spike_rate * 100).toFixed(1) + '%';
-    
-    let ruleMatch = 0;
-    Object.values(reflexRules).forEach(r => { ruleMatch += r.usage_count || 0; });
-    if (dom.reflexRuleMatch) dom.reflexRuleMatch.textContent = ruleMatch;
-    
-    if (dom.reflexResponse) dom.reflexResponse.textContent = reflex.response_history_count || 0;
-    if (dom.reflexTotalRules) dom.reflexTotalRules.textContent = reflex.total_rules || 0;
-    if (dom.reflexTotalPatterns) dom.reflexTotalPatterns.textContent = reflex.total_patterns || 0;
-    if (dom.reflexAvgConfidence) dom.reflexAvgConfidence.textContent = (reflex.recent_avg_confidence || 0).toFixed(4);
-    if (dom.reflexDelegateRate) dom.reflexDelegateRate.textContent = (reflex.delegate_rate || 0).toFixed(2);
-    
-    const deliberative = data.deliberative || {};
-    const thinking = deliberative.thinking_engine_stats || {};
-    
-    if (dom.deliberativeStatus) dom.deliberativeStatus.textContent = thinking.completed_cycles > 0 ? '活跃' : '等待';
-    if (dom.delibCycles) dom.delibCycles.textContent = thinking.total_thinking_cycles || 0;
-    if (dom.delibCompleted) dom.delibCompleted.textContent = thinking.completed_cycles || 0;
-    if (dom.delibConfidence) dom.delibConfidence.textContent = (thinking.avg_confidence || 0).toFixed(4);
-    if (dom.delibSolutions) dom.delibSolutions.textContent = (thinking.optimizer_stats || {}).solutions_count || 0;
-    if (dom.delibPhase) dom.delibPhase.textContent = deliberative.current_phase || '--';
-    if (dom.delibMode) dom.delibMode.textContent = deliberative.mode || '--';
-    if (dom.delibSystem1) dom.delibSystem1.textContent = deliberative.system1_usage || 0;
-    if (dom.delibSystem2) dom.delibSystem2.textContent = deliberative.system2_usage || 0;
-    if (dom.delibSystem1Ratio) dom.delibSystem1Ratio.textContent = (deliberative.system1_ratio || 0).toFixed(2);
-    
-    const meta = data.meta_cognitive || {};
-    const guardian = meta.boundary_guardian || {};
-    const regulator = meta.strategy_regulator || {};
-    const learning = meta.meta_learning || {};
-    const selfModel = meta.self_model_summary || {};
-    const identity = selfModel.identity || {};
-    const capabilities = selfModel.capabilities || {};
-    const state = selfModel.state || {};
-    const strategy = meta.strategy_regulator_summary || {};
-    
-    if (dom.metaStatus) dom.metaStatus.textContent = (guardian.safety_violations || 0) > 0 ? '告警' : '正常';
-    if (dom.metaViolations) dom.metaViolations.textContent = guardian.safety_violations || 0;
-    if (dom.metaStrategyChanges) dom.metaStrategyChanges.textContent = regulator.strategy_changes || strategy.strategy_changes || 0;
-    if (dom.metaLearningCycles) dom.metaLearningCycles.textContent = learning.learning_cycles || 0;
-    
-    if (dom.metaSelfName) dom.metaSelfName.textContent = identity.name || '--';
-    if (dom.metaSelfRole) dom.metaSelfRole.textContent = identity.role || '--';
-    if (dom.metaHealthScore) dom.metaHealthScore.textContent = (state.health_score || 0).toFixed(2);
-    if (dom.metaCompLoad) dom.metaCompLoad.textContent = (state.computational_load || 0).toFixed(2);
-    if (dom.metaMemoryUsage) dom.metaMemoryUsage.textContent = (state.memory_usage || 0).toFixed(2);
-    if (dom.metaThinkingStrategy) dom.metaThinkingStrategy.textContent = strategy.current_thinking_strategy || '--';
-    if (dom.metaActionStrategy) dom.metaActionStrategy.textContent = strategy.current_action_strategy || '--';
-    if (dom.metaStrengths) dom.metaStrengths.textContent = (capabilities.strengths || []).join(', ') || '--';
-    if (dom.metaWeaknesses) dom.metaWeaknesses.textContent = (capabilities.weaknesses || []).join(', ') || '--';
-    if (dom.metaAvgSuccessRate) dom.metaAvgSuccessRate.textContent = (capabilities.avg_success_rate || 0).toFixed(2);
-}
-
-function updateAutonomousAction(data) {
-    if (!data) return;
-    
-    const decomp = data.decomposition || {};
-    const planning = data.path_planning || {};
-    const execution = data.execution || {};
-    const exploration = data.exploration || {};
-    
-    if (dom.actionDecomposition) dom.actionDecomposition.textContent = decomp.total_decompositions || 0;
-    if (dom.actionPathPlanning) dom.actionPathPlanning.textContent = planning.total_paths || 0;
-    if (dom.actionExecutions) dom.actionExecutions.textContent = execution.total_executions || 0;
-    if (dom.actionSuccessRate) dom.actionSuccessRate.textContent = ((execution.success_rate || 0) * 100).toFixed(0) + '%';
-    if (dom.actionActiveGoals) dom.actionActiveGoals.textContent = data.active_goals || 0;
-    if (dom.actionExploration) dom.actionExploration.textContent = exploration.total_actions || 0;
-}
-
-function updateEvolution(data) {
-    if (!data) return;
-    
-    const quad = data.quad_level || {};
-    
-    if (dom.microReinforcements) dom.microReinforcements.textContent = quad.micro_reinforcements || 0;
-    if (dom.mesoRuleUpdates) dom.mesoRuleUpdates.textContent = quad.meso_rule_updates || 0;
-    if (dom.mesoSkillGenerations) dom.mesoSkillGenerations.textContent = quad.meso_skill_generations || 0;
-    if (dom.macroOptimizations) dom.macroOptimizations.textContent = quad.macro_optimizations || 0;
-    if (dom.metaOptimizations) dom.metaOptimizations.textContent = quad.meta_optimizations || 0;
-}
-
-function updateSecurity(data) {
-    if (!data) return;
-    
-    if (dom.securityRules) dom.securityRules.textContent = data.hard_boundary_rules || 0;
-    if (dom.securityViolations) dom.securityViolations.textContent = data.safety_violations || 0;
-    if (dom.securityRiskLevel) dom.securityRiskLevel.textContent = data.risk_level || '--';
-    if (dom.securityCircuitBreaker) dom.securityCircuitBreaker.textContent = data.circuit_breaker_status || '--';
-}
-
-let draggedPanel = null;
-
-function initPanelDragAndDrop() {
-    const panels = document.querySelectorAll('.panel[draggable="true"]');
-    
-    panels.forEach(panel => {
-        panel.addEventListener('dragstart', handleDragStart);
-        panel.addEventListener('dragover', handleDragOver);
-        panel.addEventListener('dragleave', handleDragLeave);
-        panel.addEventListener('drop', handleDrop);
-    });
-    
-    const moveButtons = document.querySelectorAll('.panel-move-btn');
-    moveButtons.forEach(btn => {
-        btn.addEventListener('click', handleMoveButtonClick);
-    });
-    
-    updateMoveButtonStates();
-}
-
-function handleDragStart(e) {
-    draggedPanel = e.target.closest('.panel');
-    draggedPanel.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', draggedPanel.id);
-}
-
-function handleDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
-    const targetPanel = e.target.closest('.panel');
-    if (targetPanel && targetPanel !== draggedPanel) {
-        targetPanel.classList.add('drag-over');
-    }
-}
-
-function handleDragLeave(e) {
-    const targetPanel = e.target.closest('.panel');
-    if (targetPanel) {
-        targetPanel.classList.remove('drag-over');
-    }
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    
-    const targetPanel = e.target.closest('.panel');
-    if (targetPanel && targetPanel !== draggedPanel) {
-        movePanel(draggedPanel, targetPanel);
-    }
-    
-    document.querySelectorAll('.panel').forEach(p => {
-        p.classList.remove('dragging', 'drag-over');
-    });
-    
-    draggedPanel = null;
-    updateMoveButtonStates();
-}
-
-function handleMoveButtonClick(e) {
-    const btn = e.target;
-    const panelId = btn.dataset.panel;
-    const direction = btn.dataset.direction;
-    
-    const panel = document.getElementById(panelId);
-    if (!panel) return;
-    
-    const parent = panel.parentElement;
-    const siblings = Array.from(parent.children).filter(c => c.classList.contains('panel'));
-    const currentIndex = siblings.indexOf(panel);
-    
-    if (direction === 'up' && currentIndex > 0) {
-        movePanel(panel, siblings[currentIndex - 1]);
-    } else if (direction === 'down' && currentIndex < siblings.length - 1) {
-        movePanel(panel, siblings[currentIndex + 1]);
-    }
-    
-    updateMoveButtonStates();
-}
-
-function movePanel(fromPanel, toPanel) {
-    const parent = fromPanel.parentElement;
-    const fromIndex = Array.from(parent.children).indexOf(fromPanel);
-    const toIndex = Array.from(parent.children).indexOf(toPanel);
-    
-    if (fromIndex < toIndex) {
-        parent.insertBefore(fromPanel, toPanel.nextSibling);
-    } else {
-        parent.insertBefore(fromPanel, toPanel);
-    }
-    
-    fromPanel.classList.add('panel-moved');
-    setTimeout(() => {
-        fromPanel.classList.remove('panel-moved');
-    }, 300);
-}
-
-function updateMoveButtonStates() {
-    const containers = document.querySelectorAll('.left-panel, .middle-panel, .right-panel');
-    
-    containers.forEach(container => {
-        const panels = Array.from(container.children).filter(c => c.classList.contains('panel'));
-        
-        panels.forEach((panel, index) => {
-            const upBtn = panel.querySelector('[data-direction="up"]');
-            const downBtn = panel.querySelector('[data-direction="down"]');
-            
-            if (upBtn) upBtn.disabled = index === 0;
-            if (downBtn) downBtn.disabled = index === panels.length - 1;
-        });
-    });
-}
-
-function startOnlineAgentsRefresh() {
-    if (onlineAgentsRefreshInterval) {
-        clearInterval(onlineAgentsRefreshInterval);
-    }
-    onlineAgentsRefreshInterval = setInterval(refreshOnlineAgents, 5000);
-    refreshOnlineAgents();
-}
-
-function stopOnlineAgentsRefresh() {
-    if (onlineAgentsRefreshInterval) {
-        clearInterval(onlineAgentsRefreshInterval);
-        onlineAgentsRefreshInterval = null;
-    }
-}
-
-async function refreshOnlineAgents() {
-    if (!serverAvailable) return;
-    try {
-        const [onlineRes, swarmRes] = await Promise.all([
-            fetch(`${API_BASE}/api/chat/online`),
-            fetch(`${API_BASE}/api/swarm/agents`)
-        ]);
-        
-        const onlineData = await onlineRes.json();
-        const swarmData = await swarmRes.json();
-        
-        const onlineIds = new Set(onlineData.online || []);
-        const agents = swarmData.agents || [];
-        
-        const onlineAgents = agents.filter(a => onlineIds.has(a.agent_id || a.id));
-        
-        if (dom.onlineAgentsList) {
-            if (onlineAgents.length === 0) {
-                dom.onlineAgentsList.innerHTML = '<span style="color: var(--text-muted);">暂无在线智能体</span>';
-            } else {
-                dom.onlineAgentsList.innerHTML = onlineAgents.map(a => 
-                    `<span class="online-agent-tag">${escapeHtml(a.name || a.agent_id)}</span>`
-                ).join('');
-            }
-        }
-    } catch (error) {
-        console.warn('Online agents refresh failed:', error.message || error);
-    }
-}
-
-async function switchChannel(channelId) {
-    currentChannel = channelId;
-    
-    document.querySelectorAll('.channel-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.channel === channelId);
-    });
-    
-    await loadChannelMessages(channelId);
-}
-
-async function loadChannelMessages(channelId) {
-    if (!serverAvailable) return;
-    try {
-        const response = await fetch(`${API_BASE}/api/channels/${channelId}/messages?limit=50`);
-        const data = await response.json();
-        
-        if (data.messages && data.messages.length > 0) {
-            channelMessages[channelId] = data.messages;
-            renderChannelMessages(data.messages);
-        } else {
-            dom.chatContainer.innerHTML = '<div class="message agent-message"><div class="message-content"><span class="agent-icon">🤖</span><p>欢迎来到 ' + (channelId === 'general' ? '综合讨论' : channelId === 'tasks' ? '任务协作' : '自由交流') + ' 频道！</p></div></div>';
-        }
-    } catch (error) {
-        console.warn('Channel messages load failed:', error.message || error);
-    }
-}
-
-function renderChannelMessages(messages) {
-    dom.chatContainer.innerHTML = messages.map(msg => {
-        const isSystem = msg.message_type === 'system';
-        const isUser = msg.sender_id === 'user';
-        const isAgent = !isSystem && !isUser;
-        
-        let icon = '';
-        let senderName = msg.sender_id;
-        
-        if (isSystem) {
-            icon = '<span class="agent-icon">📢</span>';
-            senderName = '系统';
-        } else if (isAgent) {
-            icon = '<span class="agent-icon">🤖</span>';
-        }
-        
-        return `
-            <div class="message ${isUser ? 'user-message' : 'agent-message'}">
-                <div class="message-content">
-                    ${icon}
-                    ${!isSystem ? `<span class="message-sender">${escapeHtml(senderName)}:</span>` : ''}
-                    <p>${escapeHtml(msg.content)}</p>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    dom.chatContainer.scrollTop = dom.chatContainer.scrollHeight;
-}
-
-async function sendMessageToChannel(content) {
-    if (!content.trim()) return;
-    
-    addMessage('user', content);
-    dom.chatInput.value = '';
-    
-    try {
-        const response = await fetch(`${API_BASE}/api/channels/${currentChannel}/messages`, {
+        const response = await fetch(`${API_BASE}/api/sessions/save`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                sender_id: 'user',
-                content: content,
-                message_type: 'text'
+                session_id: currentSessionId,
+                name: dom.chatSessionName.textContent,
+                messages
             })
         });
-        
-        if (response.ok) {
-            await loadChannelMessages(currentChannel);
-        }
-    } catch (error) {
-        console.error('Failed to send channel message:', error);
-        addMessage('agent', '发送消息失败，请检查网络连接');
-    }
-}
-
-// ============ 自我意识 API ============
-
-async function refreshSelfAwareness() {
-    try {
-        const response = await fetch(`${API_BASE}/api/self-awareness/status`);
-        const data = await response.json();
-        updateSelfAwareness(data);
-    } catch (error) {
-        console.warn('Self-awareness refresh failed:', error);
-    }
-}
-
-function updateSelfAwareness(data) {
-    if (!data) return;
-    
-    const metrics = data.metrics || {};
-    if (dom.selfSelfRecognition) dom.selfSelfRecognition.textContent = (metrics.self_recognition || 0).toFixed(2);
-    if (dom.selfCapabilityAwareness) dom.selfCapabilityAwareness.textContent = (metrics.capability_awareness || 0).toFixed(2);
-    if (dom.selfLimitationAwareness) dom.selfLimitationAwareness.textContent = (metrics.limitation_awareness || 0).toFixed(2);
-    if (dom.selfExistenceAwareness) dom.selfExistenceAwareness.textContent = (metrics.existence_awareness || 0).toFixed(2);
-    if (dom.selfTemporalContinuity) dom.selfTemporalContinuity.textContent = (metrics.temporal_continuity || 0).toFixed(2);
-    
-    if (dom.barSelfRecognition) dom.barSelfRecognition.style.width = `${(metrics.self_recognition || 0) * 100}%`;
-    if (dom.barCapabilityAwareness) dom.barCapabilityAwareness.style.width = `${(metrics.capability_awareness || 0) * 100}%`;
-    if (dom.barLimitationAwareness) dom.barLimitationAwareness.style.width = `${(metrics.limitation_awareness || 0) * 100}%`;
-    if (dom.barExistenceAwareness) dom.barExistenceAwareness.style.width = `${(metrics.existence_awareness || 0) * 100}%`;
-    if (dom.barTemporalContinuity) dom.barTemporalContinuity.style.width = `${(metrics.temporal_continuity || 0) * 100}%`;
-    
-    const identity = data.identity || {};
-    if (dom.identityName) dom.identityName.textContent = identity.name || '--';
-    if (dom.identityRole) dom.identityRole.textContent = identity.role || '--';
-    if (dom.identityGoals) dom.identityGoals.textContent = (identity.goals || []).join(', ') || '--';
-    
-    const introspection = data.introspection || [];
-    if (dom.introspectionHistory) {
-        dom.introspectionHistory.innerHTML = introspection.slice(0, 5).map(item => 
-            `<div class="introspection-history-item">${item.timestamp || ''}: ${item.content || ''}</div>`
-        ).join('');
-    }
-}
-
-// ============ 思考 API ============
-
-async function decomposeProblem() {
-    const problem = dom.problemInput?.value?.trim();
-    if (!problem) return;
-    
-    try {
-        const response = await fetch(`${API_BASE}/api/thinking/decompose`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ problem })
-        });
-        const data = await response.json();
-        
-        if (dom.decomposeResult) {
-            dom.decomposeResult.innerHTML = `
-                <h4>问题分解结果</h4>
-                <ul>${(data.subproblems || []).map((p, i) => `<li>${i + 1}. ${p}</li>`).join('')}</ul>
-            `;
-        }
-    } catch (error) {
-        console.error('Problem decomposition failed:', error);
-        if (dom.decomposeResult) dom.decomposeResult.innerHTML = '<div>分解失败，请重试</div>';
-    }
-}
-
-async function criticalAnalyze() {
-    const input = dom.criticalInput?.value?.trim();
-    if (!input) return;
-    
-    try {
-        const response = await fetch(`${API_BASE}/api/thinking/critical`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ input })
-        });
-        const data = await response.json();
-        
-        if (dom.criticalResult) {
-            dom.criticalResult.innerHTML = `
-                <h4>批判性分析结果</h4>
-                <ul>
-                    ${data.strengths ? `<li><strong>优点:</strong> ${data.strengths}</li>` : ''}
-                    ${data.weaknesses ? `<li><strong>缺点:</strong> ${data.weaknesses}</li>` : ''}
-                    ${data.biases ? `<li><strong>偏见:</strong> ${data.biases}</li>` : ''}
-                    ${data.improvements ? `<li><strong>改进建议:</strong> ${data.improvements}</li>` : ''}
-                </ul>
-            `;
-        }
-    } catch (error) {
-        console.error('Critical analysis failed:', error);
-        if (dom.criticalResult) dom.criticalResult.innerHTML = '<div>分析失败，请重试</div>';
-    }
-}
-
-// ============ 决策 API ============
-
-async function simulateDecision() {
-    const goal = dom.simGoal?.value || '测试决策';
-    const confidence = parseFloat(dom.simConfidence?.value) || 0.7;
-    const riskLevel = dom.simRiskLevel?.value || 'medium';
-    
-    try {
-        const response = await fetch(`${API_BASE}/api/decision/make`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ goal, confidence, risk_level: riskLevel })
-        });
-        const data = await response.json();
-        
-        if (dom.decisionResult) {
-            dom.decisionResult.innerHTML = `
-                <div class="decision-outcome">${data.outcome || '--'}</div>
-                <div><strong>置信度:</strong> ${(data.confidence || 0).toFixed(2)}</div>
-                <div><strong>风险等级:</strong> ${data.risk_level || '--'}</div>
-                <div><strong>预期收益:</strong> ${(data.expected_utility || 0).toFixed(2)}</div>
-                <div><strong>理由:</strong> ${data.reasoning || '--'}</div>
-            `;
-        }
-    } catch (error) {
-        console.error('Decision simulation failed:', error);
-        if (dom.decisionResult) dom.decisionResult.innerHTML = '<div>决策失败，请重试</div>';
-    }
-}
-
-// ============ 个性 API ============
-
-async function refreshPersonality() {
-    try {
-        const response = await fetch(`${API_BASE}/api/personality/status`);
-        const data = await response.json();
-        updatePersonality(data);
-    } catch (error) {
-        console.warn('Personality refresh failed:', error);
-    }
-}
-
-function updatePersonality(data) {
-    if (!data) return;
-    
-    if (dom.personalitySignature) dom.personalitySignature.textContent = data.signature || '--';
-    if (dom.personalityConsistency) dom.personalityConsistency.textContent = (data.consistency || 0).toFixed(3);
-    
-    const traits = data.traits || {};
-    if (dom.barTraitCuriosity) dom.barTraitCuriosity.style.width = `${(traits.curiosity || 0) * 100}%`;
-    if (dom.barTraitAssertiveness) dom.barTraitAssertiveness.style.width = `${(traits.assertiveness || 0) * 100}%`;
-    if (dom.barTraitCautiousness) dom.barTraitCautiousness.style.width = `${(traits.cautiousness || 0) * 100}%`;
-    if (dom.barTraitCreativity) dom.barTraitCreativity.style.width = `${(traits.creativity || 0) * 100}%`;
-    if (dom.barTraitPatience) dom.barTraitPatience.style.width = `${(traits.patience || 0) * 100}%`;
-    
-    const values = data.values || {};
-    if (dom.barValueSurvival) dom.barValueSurvival.style.width = `${(values.survival || 0) * 100}%`;
-    if (dom.barValueKnowledge) dom.barValueKnowledge.style.width = `${(values.knowledge || 0) * 100}%`;
-    if (dom.barValueGrowth) dom.barValueGrowth.style.width = `${(values.growth || 0) * 100}%`;
-}
-
-// ============ 记忆系统 API ============
-
-async function refreshMemory() {
-    try {
-        const response = await fetch(`${API_BASE}/api/memory/status`);
-        const data = await response.json();
-        updateMemory(data);
-    } catch (error) {
-        console.warn('Memory refresh failed:', error);
-    }
-}
-
-function updateMemory(data) {
-    if (!data) return;
-    
-    const layers = data.layers || {};
-    if (dom.memL1Count) dom.memL1Count.textContent = layers.l1_count || 0;
-    if (dom.memL2Count) dom.memL2Count.textContent = layers.l2_count || 0;
-    if (dom.memL3Count) dom.memL3Count.textContent = layers.l3_count || 0;
-    if (dom.memL4Count) dom.memL4Count.textContent = layers.l4_count || 0;
-    
-    if (dom.memBarL1) dom.memBarL1.style.width = `${Math.min(100, (layers.l1_usage || 0) * 100)}%`;
-    if (dom.memBarL2) dom.memBarL2.style.width = `${Math.min(100, (layers.l2_usage || 0) * 100)}%`;
-    if (dom.memBarL3) dom.memBarL3.style.width = `${Math.min(100, (layers.l3_usage || 0) * 100)}%`;
-    if (dom.memBarL4) dom.memBarL4.style.width = `${Math.min(100, (layers.l4_usage || 0) * 100)}%`;
-    
-    if (dom.memTotalCapacity) dom.memTotalCapacity.textContent = data.total_capacity || '--';
-    if (dom.memUsed) dom.memUsed.textContent = data.used || '--';
-    if (dom.memUtilization) dom.memUtilization.textContent = `${(data.utilization || 0) * 100}%`;
-    
-    const recent = data.recent || [];
-    if (dom.memoryRecentList) {
-        dom.memoryRecentList.innerHTML = recent.slice(0, 5).map(item => 
-            `<div class="memory-recent-item">${item.content || ''}<span class="memory-recent-time">${item.timestamp || ''}</span></div>`
-        ).join('');
-    }
-}
-
-async function clearMemory() {
-    try {
-        const response = await fetch(`${API_BASE}/api/memory/clear`, { method: 'POST' });
         const data = await response.json();
         if (data.status === 'success') {
-            addMessage('agent', '记忆已清空');
-            refreshMemory();
+            addMessage('assistant', '会话已保存');
+            currentSessionId = data.session_id;
+            loadSessions();
         }
     } catch (error) {
-        console.error('Clear memory failed:', error);
+        console.error('Failed to save session:', error);
+        addMessage('assistant', '保存会话失败');
     }
 }
 
-// ============ 知识图谱 API ============
-
-async function refreshKnowledge() {
+async function exportSession() {
     try {
-        const response = await fetch(`${API_BASE}/api/knowledge/status`);
+        const response = await fetch(`${API_BASE}/api/sessions/export`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: currentSessionId })
+        });
         const data = await response.json();
-        updateKnowledge(data);
-    } catch (error) {
-        console.warn('Knowledge refresh failed:', error);
-    }
-}
-
-function updateKnowledge(data) {
-    if (!data) return;
-    
-    if (dom.kgNodeCount) dom.kgNodeCount.textContent = data.node_count || 0;
-    if (dom.kgEdgeCount) dom.kgEdgeCount.textContent = data.edge_count || 0;
-    if (dom.kgClusterCount) dom.kgClusterCount.textContent = data.cluster_count || 0;
-    if (dom.kgActivity) dom.kgActivity.textContent = `${(data.activity || 0) * 100}%`;
-    
-    const recent = data.recent || [];
-    if (dom.knowledgeRecentList) {
-        dom.knowledgeRecentList.innerHTML = recent.slice(0, 5).map(item => 
-            `<div class="knowledge-recent-item">${item || ''}</div>`
-        ).join('');
-    }
-}
-
-// ============ 学习进度 API ============
-
-async function refreshLearning() {
-    try {
-        const response = await fetch(`${API_BASE}/api/learning/status`);
-        const data = await response.json();
-        updateLearning(data);
-    } catch (error) {
-        console.warn('Learning refresh failed:', error);
-    }
-}
-
-function updateLearning(data) {
-    if (!data) return;
-    
-    const progress = data.progress || {};
-    const total = Math.min(100, (progress.total || 0) * 100);
-    if (dom.learningPercentage) dom.learningPercentage.textContent = `${Math.round(total)}%`;
-    
-    if (dom.learningCycles) dom.learningCycles.textContent = data.cycles || 0;
-    if (dom.learningKnowledge) dom.learningKnowledge.textContent = data.knowledge || '--';
-    if (dom.learningSkills) dom.learningSkills.textContent = data.skills || '--';
-    
-    const rlProgress = Math.min(100, (progress.reinforcement || 0) * 100);
-    const evoProgress = Math.min(100, (progress.evolution || 0) * 100);
-    const metaProgress = Math.min(100, (progress.meta_learning || 0) * 100);
-    
-    if (dom.learningRlProgress) dom.learningRlProgress.textContent = `${Math.round(rlProgress)}%`;
-    if (dom.learningEvoProgress) dom.learningEvoProgress.textContent = `${Math.round(evoProgress)}%`;
-    if (dom.learningMetaProgress) dom.learningMetaProgress.textContent = `${Math.round(metaProgress)}%`;
-    
-    if (dom.barLearningRl) dom.barLearningRl.style.width = `${rlProgress}%`;
-    if (dom.barLearningEvo) dom.barLearningEvo.style.width = `${evoProgress}%`;
-    if (dom.barLearningMeta) dom.barLearningMeta.style.width = `${metaProgress}%`;
-}
-
-// ============ 日志系统 ============
-
-let allLogs = [];
-
-async function loadLogs() {
-    try {
-        const response = await fetch(`${API_BASE}/api/logs`);
-        const data = await response.json();
-        allLogs = data.logs || [];
-        renderLogs();
-    } catch (error) {
-        console.warn('Logs load failed:', error);
-    }
-}
-
-function renderLogs() {
-    if (!dom.logsList) return;
-    
-    const filter = dom.logLevelFilter?.value || 'all';
-    const filteredLogs = filter === 'all' 
-        ? allLogs 
-        : allLogs.filter(log => log.level === filter);
-    
-    dom.logsList.innerHTML = filteredLogs.slice(-20).reverse().map(log => `
-        <div class="log-item">
-            <span class="log-time">${log.timestamp || ''}</span>
-            <span class="log-level ${log.level || 'info'}">${log.level || 'INFO'}</span>
-            <span class="log-message">${escapeHtml(log.message || '')}</span>
-        </div>
-    `).join('');
-    
-    dom.logsList.scrollTop = 0;
-}
-
-function filterLogs() {
-    renderLogs();
-}
-
-function clearLogs() {
-    if (dom.logsList) {
-        dom.logsList.innerHTML = '';
-        allLogs = [];
-    }
-}
-
-// ============ 更新主刷新函数 ============
-
-function startMentalArchitectureRefresh() {
-    if (mentalArchitectureRefreshInterval) {
-        clearInterval(mentalArchitectureRefreshInterval);
-    }
-    mentalArchitectureRefreshInterval = setInterval(() => {
-        refreshMentalArchitectureData();
-        refreshSelfAwareness();
-        refreshPersonality();
-        refreshMemory();
-        refreshKnowledge();
-        refreshLearning();
-        loadLogs();
-        refreshFileStats();
-    }, 3000);
-    refreshMentalArchitectureData();
-    refreshSelfAwareness();
-    refreshPersonality();
-    refreshMemory();
-    refreshKnowledge();
-    refreshLearning();
-    loadLogs();
-    refreshFileStats();
-}
-
-// ============ 文件摄入系统 API ============
-
-async function handleFileUpload(files) {
-    if (!files || files.length === 0) return;
-    
-    setFileStatus('info', `正在上传 ${files.length} 个文件...`);
-    
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            const response = await fetch(`${API_BASE}/api/file-ingestion/upload`, {
-                method: 'POST',
-                body: formData
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                setFileStatus('success', `文件 ${file.name} 摄入成功！`);
-            } else {
-                setFileStatus('error', `文件 ${file.name} 摄入失败: ${data.detail || '未知错误'}`);
-            }
-        } catch (error) {
-            setFileStatus('error', `文件 ${file.name} 上传失败: ${error.message}`);
+        if (data.status === 'success') {
+            const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `session_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            addMessage('assistant', '会话已导出');
         }
-    }
-    
-    await refreshFileStats();
-}
-
-async function searchFiles() {
-    const query = dom.fileSearchInput?.value?.trim();
-    if (!query) return;
-    
-    const searchType = dom.fileSearchType?.value || 'content';
-    
-    try {
-        const response = await fetch(`${API_BASE}/api/file-ingestion/search?query=${encodeURIComponent(query)}&search_type=${searchType}`);
-        const data = await response.json();
-        
-        renderFileSearchResults(data.results || []);
     } catch (error) {
-        console.error('File search failed:', error);
+        console.error('Failed to export session:', error);
+        addMessage('assistant', '导出会话失败');
     }
 }
 
-function renderFileSearchResults(results) {
-    if (!dom.fileIngestionList) return;
-    
-    if (results.length === 0) {
-        dom.fileIngestionList.innerHTML = '<div class="file-item"><div class="file-item-info">未找到匹配的文件</div></div>';
+function toggleFastMode() {
+    dom.fastModeToggle.classList.toggle('active');
+    dom.fastModeBtn.disabled = !dom.fastModeBtn.disabled;
+}
+
+function searchSessions(query) {
+    const searchTerm = query || dom.chatSearchInput.value.toLowerCase();
+    dom.sessionList.querySelectorAll('.session-item').forEach(item => {
+        const name = item.querySelector('.session-name').textContent.toLowerCase();
+        item.style.display = name.includes(searchTerm) ? 'flex' : 'none';
+    });
+}
+
+async function loadSessions() {
+    try {
+        const response = await fetch(`${API_BASE}/api/sessions/list`);
+        const data = await response.json();
+        sessions = data.sessions || [];
+        renderSessions();
+    } catch (error) {
+        console.error('Failed to load sessions:', error);
+    }
+}
+
+function renderSessions() {
+    if (sessions.length === 0) {
+        dom.sessionList.innerHTML = `
+            <div class="session-item active">
+                <span class="session-icon">💬</span>
+                <span class="session-name">新会话</span>
+                <span class="session-time">刚刚</span>
+            </div>
+        `;
         return;
     }
     
-    dom.fileIngestionList.innerHTML = results.map(result => `
-        <div class="file-item">
-            <div class="file-item-info">
-                <div class="file-item-name">${escapeHtml(result.content || '')}</div>
-                <div class="file-item-meta">类型: ${result.content_type || '--'} | 相似度: ${(result.score || 0).toFixed(2)}</div>
-            </div>
-            <div class="file-item-actions">
-                <button onclick="viewFileRecord('${result.record_id}')">查看</button>
-            </div>
+    dom.sessionList.innerHTML = sessions.map((session, index) => `
+        <div class="session-item ${index === 0 ? 'active' : ''}" onclick="loadSession('${session.id}')">
+            <span class="session-icon">💬</span>
+            <span class="session-name">${session.name}</span>
+            <span class="session-time">${formatTime(session.last_active)}</span>
         </div>
     `).join('');
 }
 
-async function viewFileRecord(recordId) {
+function loadSession(sessionId) {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    
+    currentSessionId = sessionId;
+    dom.chatSessionName.textContent = session.name;
+    clearChat();
+    
+    (session.messages || []).forEach(msg => {
+        addMessage(msg.role, msg.content);
+    });
+    
+    switchView('chat');
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return '刚刚';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+    return date.toLocaleDateString();
+}
+
+async function saveAllSessions() {
     try {
-        const response = await fetch(`${API_BASE}/api/file-ingestion/record/${recordId}`);
+        const response = await fetch(`${API_BASE}/api/sessions/save_all`, { method: 'POST' });
         const data = await response.json();
-        
-        if (response.ok) {
-            setFileStatus('info', `记录 ${recordId}: ${data.content_type}`);
+        if (data.status === 'success') {
+            addMessage('assistant', '所有会话已保存');
         }
     } catch (error) {
-        console.error('View record failed:', error);
+        console.error('Failed to save all sessions:', error);
     }
 }
 
-async function deleteFileRecord(recordId) {
-    if (!confirm('确定要删除这个记录吗？')) return;
+async function exportAllSessions() {
+    try {
+        const response = await fetch(`${API_BASE}/api/sessions/export_all`, { method: 'POST' });
+        const data = await response.json();
+        if (data.status === 'success') {
+            const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `all_sessions_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    } catch (error) {
+        console.error('Failed to export all sessions:', error);
+    }
+}
+
+async function loadAgents() {
+    try {
+        const response = await fetch(`${API_BASE}/api/agents/list`);
+        const data = await response.json();
+        const agents = data.agents || [];
+        renderAgents(agents);
+    } catch (error) {
+        console.error('Failed to load agents:', error);
+        dom.agentList.innerHTML = '<div class="empty-state">无法加载Agent列表</div>';
+    }
+}
+
+function renderAgents(agents) {
+    if (agents.length === 0) {
+        dom.agentList.innerHTML = '<div class="empty-state">暂无Agent</div>';
+        return;
+    }
+    
+    dom.agentList.innerHTML = agents.map((agent, index) => `
+        <div class="agent-item ${index === 0 ? 'active' : ''}" onclick="loadAgentDetail('${agent.name}')">
+            <h4>${agent.name}</h4>
+            <p>${agent.description || '暂无描述'}</p>
+        </div>
+    `).join('');
+}
+
+function loadAgentDetail(agentName) {
+    dom.agentDetailName.textContent = agentName;
+    dom.agentDetailContent.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                <h4>基本信息</h4>
+                <p style="color: var(--text-secondary); margin-top: 8px;">名称: ${agentName}</p>
+                <p style="color: var(--text-secondary);">状态: <span style="color: var(--success-color);">运行中</span></p>
+            </div>
+            <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                <h4>配置</h4>
+                <p style="color: var(--text-secondary);">温度: 0.7</p>
+            </div>
+            <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                <h4>工具</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                    <span style="padding: 4px 12px; background: var(--bg-secondary); border-radius: 12px; font-size: 12px;">文件操作</span>
+                    <span style="padding: 4px 12px; background: var(--bg-secondary); border-radius: 12px; font-size: 12px;">Shell命令</span>
+                    <span style="padding: 4px 12px; background: var(--bg-secondary); border-radius: 12px; font-size: 12px;">Web浏览</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function createNewAgent() {
+    addMessage('assistant', '新建Agent功能正在开发中...');
+}
+
+async function saveConfig() {
+    const config = {
+        port: parseInt(document.getElementById('configPort')?.value) || 8000,
+        max_sessions: parseInt(document.getElementById('configMaxSessions')?.value) || 10,
+        temperature: parseFloat(document.getElementById('configTemperature')?.value) || 0.7,
+        agent_name: document.getElementById('configAgentName')?.value || 'OpenClaw Agent',
+        system_prompt: document.getElementById('configSystemPrompt')?.value || ''
+    };
     
     try {
-        const response = await fetch(`${API_BASE}/api/file-ingestion/record/${recordId}`, {
-            method: 'DELETE'
+        const response = await fetch(`${API_BASE}/api/config/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            addMessage('assistant', '配置已保存');
+        }
+    } catch (error) {
+        console.error('Failed to save config:', error);
+        addMessage('assistant', '保存配置失败');
+    }
+}
+
+function resetConfig() {
+    document.getElementById('configPort').value = 8000;
+    document.getElementById('configMaxSessions').value = 10;
+    document.getElementById('configTemperature').value = 0.7;
+    document.getElementById('configTemperatureValue').textContent = '0.7';
+    document.getElementById('configAgentName').value = 'OpenClaw Agent';
+    document.getElementById('configSystemPrompt').value = '你是一个强大的AI助手...';
+}
+
+async function refreshOverview() {
+    try {
+        const response = await fetch(`${API_BASE}/api/system/overview`);
+        const data = await response.json();
+        
+        if (dom.statActiveAgents) dom.statActiveAgents.textContent = data.active_agents || 0;
+        if (dom.statConnectedChannels) dom.statConnectedChannels.textContent = data.connected_channels || 0;
+        if (dom.statActiveSessions) dom.statActiveSessions.textContent = data.active_sessions || 0;
+        if (dom.statTokenRate) dom.statTokenRate.textContent = data.token_rate || 0;
+
+        if (dom.statMemoryTiers) dom.statMemoryTiers.textContent = data.memory_tiers || 5;
+        if (dom.statEvolution) dom.statEvolution.textContent = data.evolution_count || 0;
+        if (dom.statFreeEnergy) dom.statFreeEnergy.textContent = (data.free_energy || 0).toFixed(2);
+        if (dom.statConfidence) dom.statConfidence.textContent = `${(data.confidence || 0) * 100}%`;
+        if (dom.statSafety) dom.statSafety.textContent = data.safety_status || '安全';
+        if (dom.statKnowledge) dom.statKnowledge.textContent = data.knowledge_nodes || 0;
+        
+        updateSystemStatus(data.system_status);
+        renderActivity(data.recent_activity || []);
+        
+        updateAgentInfo(data.agent_info);
+    } catch (error) {
+        console.error('Failed to refresh overview:', error);
+    }
+}
+
+function updateAgentInfo(agentInfo) {
+    if (!agentInfo) return;
+    dom.agentInfoName.textContent = agentInfo.name || 'AGI_Agent';
+    dom.agentInfoStep.textContent = agentInfo.step || 0;
+    dom.agentInfoStatus.textContent = agentInfo.status || '运行中';
+    dom.agentInfoDim.textContent = agentInfo.input_dim || 16;
+}
+
+function updateSystemStatus(status) {
+    if (!status) return;
+    
+    updateStatusItem('cpu', status.cpu_usage, status.cpu_usage > 80 ? 'warning' : status.cpu_usage > 90 ? 'error' : 'online');
+    updateStatusItem('memory', status.memory_usage, status.memory_usage > 80 ? 'warning' : status.memory_usage > 90 ? 'error' : 'online');
+    updateStatusItem('gpu', status.gpu_usage || '--', 'online');
+}
+
+function updateStatusItem(type, value, statusClass) {
+    const dot = document.getElementById(`${type}Status`);
+    const usage = document.getElementById(`${type}Usage`);
+    
+    if (dot) {
+        dot.className = 'status-dot ' + statusClass;
+    }
+    if (usage) {
+        usage.textContent = typeof value === 'number' ? value + '%' : value;
+    }
+}
+
+function renderActivity(activity) {
+    dom.activityList.innerHTML = activity.map(item => `
+        <div class="activity-item">
+            <span class="activity-title">${item.action}</span>
+            <span class="activity-time">${formatTime(item.timestamp)}</span>
+        </div>
+    `).join('') || '<div style="color: var(--text-muted); font-size: 13px; padding: 12px;">暂无活动记录</div>';
+}
+
+function refreshAllData() {
+    checkAgentStatus();
+    refreshOverview();
+    loadSessions();
+    loadAgents();
+}
+
+function handleKeyDown(e) {
+    if (e.key === 'Escape') {
+        closeCommandPalette();
+    }
+    
+    if (dom.commandPalette.style.display === 'block') {
+        const items = dom.cpList.querySelectorAll('.cp-item');
+        let currentIndex = -1;
+        
+        items.forEach((item, index) => {
+            if (item.classList.contains('selected')) {
+                currentIndex = index;
+            }
         });
         
-        if (response.ok) {
-            setFileStatus('success', '记录已删除');
-            await refreshFileStats();
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (currentIndex < items.length - 1) {
+                if (currentIndex >= 0) items[currentIndex].classList.remove('selected');
+                items[currentIndex + 1].classList.add('selected');
+                items[currentIndex + 1].scrollIntoView({ block: 'nearest' });
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (currentIndex > 0) {
+                items[currentIndex].classList.remove('selected');
+                items[currentIndex - 1].classList.add('selected');
+                items[currentIndex - 1].scrollIntoView({ block: 'nearest' });
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const selected = dom.cpList.querySelector('.cp-item.selected');
+            if (selected) {
+                const label = selected.querySelector('.cp-label').textContent;
+                handleCommandAction(label);
+                closeCommandPalette();
+            }
         }
-    } catch (error) {
-        setFileStatus('error', '删除失败');
     }
 }
 
-async function refreshFileStats() {
+function handleCommandAction(label) {
+    switch (label) {
+        case '新建会话':
+            createNewSession();
+            switchView('chat');
+            break;
+        case '搜索会话':
+            dom.chatSearchInput.focus();
+            switchView('chat');
+            break;
+        case '切换极速模式':
+            toggleFastMode();
+            break;
+        case '打开配置':
+            switchView('config');
+            break;
+        case '查看概览':
+            switchView('overview');
+            break;
+        case '查看记忆':
+            switchView('memory');
+            break;
+        case '编辑 SOUL':
+            switchView('soul');
+            break;
+        case '任务看板':
+            switchView('tasks');
+            break;
+        case '进化监控':
+            switchView('evolution');
+            break;
+        case '安全中心':
+            switchView('security');
+            break;
+        case '自我改进':
+            switchView('selfimprovement');
+            break;
+    }
+}
+
+async function runAgentStep() {
     try {
-        const response = await fetch(`${API_BASE}/api/file-ingestion/stats`);
+        const response = await fetch(`${API_BASE}/api/agent/step`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ observation: [] })
+        });
         const data = await response.json();
-        
-        if (data.status === 'not_initialized') {
-            return;
-        }
-        
-        const storage = data.storage || {};
-        if (dom.fileTotalRecords) {
-            dom.fileTotalRecords.textContent = storage.total_records || 0;
-        }
-        
-        if (dom.fileTypeDistribution) {
-            const dist = storage.type_distribution || {};
-            const distStr = Object.entries(dist).map(([k, v]) => `${k}: ${v}`).join(', ') || '--';
-            dom.fileTypeDistribution.textContent = distStr;
-        }
-        
-        renderFileList(storage.total_records || 0);
+        console.log('Agent step result:', data);
+        refreshOverview();
     } catch (error) {
-        console.warn('File stats refresh failed:', error);
+        console.error('Failed to run agent step:', error);
     }
 }
 
-function renderFileList(count) {
-    if (!dom.fileIngestionList) return;
-    
-    if (count === 0) {
-        dom.fileIngestionList.innerHTML = '<div class="file-item"><div class="file-item-info">暂无摄入文件</div></div>';
+async function loadMemory() {
+    try {
+        const [statsResponse, listResponse] = await Promise.all([
+            fetch(`${API_BASE}/api/memory/stats`),
+            fetch(`${API_BASE}/api/memory/list?tier=${currentMemoryTier}`)
+        ]);
+        
+        const stats = await statsResponse.json();
+        const listData = await listResponse.json();
+        
+        renderMemoryStats(stats);
+        renderMemoryList(listData.memories || []);
+    } catch (error) {
+        console.error('Failed to load memory:', error);
+        dom.memoryStats.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+        dom.memoryList.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+    }
+}
+
+function renderMemoryStats(stats) {
+    dom.memoryStats.innerHTML = `
+        <div class="memory-stat-item"><span>总记忆数:</span><span>${stats.total_entries || 0}</span></div>
+        <div class="memory-stat-item"><span>L1:</span><span>${stats.L1 || 0}</span></div>
+        <div class="memory-stat-item"><span>L2:</span><span>${stats.L2 || 0}</span></div>
+        <div class="memory-stat-item"><span>L3:</span><span>${stats.L3 || 0}</span></div>
+        <div class="memory-stat-item"><span>L4:</span><span>${stats.L4 || 0}</span></div>
+        <div class="memory-stat-item"><span>L5:</span><span>${stats.L5 || 0}</span></div>
+    `;
+}
+
+function renderMemoryList(memories) {
+    if (memories.length === 0) {
+        dom.memoryList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 40px;">暂无记忆</div>';
         return;
     }
+    
+    dom.memoryList.innerHTML = memories.map(m => `
+        <div class="memory-item">
+            <div class="memory-item-header">
+                <span class="memory-item-id">ID: ${m.memory_id || 'N/A'}</span>
+                <span class="memory-item-time">${formatTime(m.timestamp)}</span>
+            </div>
+            <div class="memory-item-content">${m.content || m.data || '无内容'}</div>
+        </div>
+    `).join('');
 }
 
-function setFileStatus(type, message) {
-    if (!dom.fileStatusMessage) return;
-    
-    dom.fileStatusMessage.className = `status-message ${type}`;
-    dom.fileStatusMessage.textContent = message;
-    
-    if (type === 'success' || type === 'error') {
-        setTimeout(() => {
-            dom.fileStatusMessage.className = 'status-message';
-        }, 3000);
+function searchMemories() {
+    const query = dom.memorySearchInput.value.trim();
+    if (!query) {
+        loadMemory();
+        return;
     }
+    
+    fetch(`${API_BASE}/api/memory/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+    })
+    .then(response => response.json())
+    .then(data => {
+        renderMemoryList(data.results || []);
+    })
+    .catch(error => console.error('Search failed:', error));
+}
+
+function addMemory() {
+    const content = prompt('输入记忆内容:');
+    if (!content) return;
+    
+    fetch(`${API_BASE}/api/memory/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, tier: currentMemoryTier })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadMemory();
+        }
+    })
+    .catch(error => console.error('Add memory failed:', error));
+}
+
+async function loadSoul() {
+    try {
+        const response = await fetch(`${API_BASE}/api/soul/info`);
+        const data = await response.json();
+        
+        if (data.identity) {
+            dom.soulName.value = data.identity.name || 'AGI_Agent';
+            dom.soulRole.value = data.identity.role_boundary || 'Autonomous Intelligence';
+            
+            if (data.identity.personality) {
+                dom.soulRigor.value = data.identity.personality.rigor || 50;
+                dom.soulCreativity.value = data.identity.personality.creativity || 50;
+            }
+        }
+        
+        renderSoulGoals(data.goals || {});
+        renderSoulBoundaries(data.boundaries || {});
+        renderSoulPermissions(data.permissions || {});
+    } catch (error) {
+        console.error('Failed to load SOUL:', error);
+    }
+}
+
+function renderSoulGoals(goals) {
+    dom.soulGoalsContent.innerHTML = `
+        <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+            <h4>使命</h4>
+            <p style="color: var(--text-secondary); margin-top: 8px;">${goals.mission || '未设置'}</p>
+        </div>
+        <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); margin-top: 12px;">
+            <h4>目标节点</h4>
+            <ul style="color: var(--text-secondary); margin-top: 8px; list-style: none; padding: 0;">
+                ${(goals.nodes || []).map((node, i) => `
+                    <li style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">${i + 1}. ${node.name || node}</li>
+                `).join('') || '<li>暂无目标节点</li>'}
+            </ul>
+        </div>
+    `;
+}
+
+function renderSoulBoundaries(boundaries) {
+    dom.soulBoundariesContent.innerHTML = `
+        <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+            <h4>禁止行为</h4>
+            <ul style="color: var(--text-secondary); margin-top: 8px;">
+                ${(boundaries.forbidden_actions || []).map((action, i) => `
+                    <li>${i + 1}. ${action}</li>
+                `).join('') || '<li>未设置</li>'}
+            </ul>
+        </div>
+        <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); margin-top: 12px;">
+            <h4>伦理原则</h4>
+            <ul style="color: var(--text-secondary); margin-top: 8px;">
+                ${(boundaries.ethical_principles || []).map((principle, i) => `
+                    <li>${i + 1}. ${principle}</li>
+                `).join('') || '<li>未设置</li>'}
+            </ul>
+        </div>
+        <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); margin-top: 12px;">
+            <h4>安全红线</h4>
+            <ul style="color: var(--error-color); margin-top: 8px;">
+                ${(boundaries.safety_redlines || []).map((redline, i) => `
+                    <li>${i + 1}. ${redline}</li>
+                `).join('') || '<li>未设置</li>'}
+            </ul>
+        </div>
+    `;
+}
+
+function renderSoulPermissions(permissions) {
+    dom.soulPermissionsContent.innerHTML = `
+        <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+            <h4>权限条目</h4>
+            <ul style="color: var(--text-secondary); margin-top: 8px;">
+                ${(permissions.entries || []).map((entry, i) => `
+                    <li style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">${i + 1}. ${entry.name || entry}</li>
+                `).join('') || '<li>暂无权限条目</li>'}
+            </ul>
+        </div>
+    `;
+}
+
+function saveSoul() {
+    const data = {
+        identity: {
+            name: dom.soulName.value,
+            role_boundary: dom.soulRole.value,
+            personality: {
+                rigor: parseInt(dom.soulRigor.value),
+                creativity: parseInt(dom.soulCreativity.value)
+            }
+        }
+    };
+    
+    fetch(`${API_BASE}/api/soul/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            addMessage('assistant', `SOUL已保存，版本: ${data.version}`);
+        }
+    })
+    .catch(error => console.error('Save SOUL failed:', error));
+}
+
+function exportSoul() {
+    fetch(`${API_BASE}/api/soul/export`)
+    .then(response => response.json())
+    .then(data => {
+        const blob = new Blob([data.markdown], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'SOUL.md';
+        a.click();
+        URL.revokeObjectURL(url);
+        addMessage('assistant', 'SOUL已导出');
+    })
+    .catch(error => console.error('Export SOUL failed:', error));
+}
+
+async function loadTasks() {
+    try {
+        const [statsResponse, tasksResponse] = await Promise.all([
+            fetch(`${API_BASE}/api/tasks/stats`),
+            fetch(`${API_BASE}/api/tasks/list`)
+        ]);
+        
+        const stats = await statsResponse.json();
+        const tasksData = await tasksResponse.json();
+        
+        renderTasksStats(stats);
+        renderTasksBoard(tasksData.tasks || []);
+    } catch (error) {
+        console.error('Failed to load tasks:', error);
+    }
+}
+
+function renderTasksStats(stats) {
+    const boardStats = stats.board || {};
+    dom.tasksStats.innerHTML = `
+        <span>待处理: <strong>${boardStats.pending || 0}</strong></span>
+        <span>进行中: <strong>${boardStats.in_progress || 0}</strong></span>
+        <span>已完成: <strong>${boardStats.completed || 0}</strong></span>
+    `;
+}
+
+function renderTasksBoard(tasks) {
+    const pending = tasks.filter(t => t.status === 'pending');
+    const inProgress = tasks.filter(t => t.status === 'in_progress');
+    const completed = tasks.filter(t => t.status === 'completed');
+    
+    dom.taskPending.innerHTML = renderTaskColumn(pending);
+    dom.taskInProgress.innerHTML = renderTaskColumn(inProgress);
+    dom.taskCompleted.innerHTML = renderTaskColumn(completed);
+}
+
+function renderTaskColumn(tasks) {
+    if (tasks.length === 0) {
+        return '<div style="color: var(--text-muted); text-align: center; padding: 20px;">无任务</div>';
+    }
+    
+    return tasks.map(task => `
+        <div class="task-card">
+            <h4>${task.name}</h4>
+            <p>${task.description || '无描述'}</p>
+            <span class="task-priority ${task.priority?.toLowerCase() || 'medium'}">${task.priority || 'MEDIUM'}</span>
+        </div>
+    `).join('');
+}
+
+function submitTask() {
+    const name = prompt('输入任务名称:');
+    if (!name) return;
+    const description = prompt('输入任务描述:');
+    const priority = prompt('输入优先级 (low/medium/high/critical):', 'medium');
+    
+    fetch(`${API_BASE}/api/tasks/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description, priority })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadTasks();
+        }
+    })
+    .catch(error => console.error('Submit task failed:', error));
+}
+
+async function loadEvolution() {
+    try {
+        const [statsResponse, proposalsResponse] = await Promise.all([
+            fetch(`${API_BASE}/api/evolution/stats`),
+            fetch(`${API_BASE}/api/evolution/proposals`)
+        ]);
+        
+        const stats = await statsResponse.json();
+        const proposalsData = await proposalsResponse.json();
+        
+        renderEvolutionStats(stats);
+        renderProposals(proposalsData.proposals || []);
+    } catch (error) {
+        console.error('Failed to load evolution:', error);
+    }
+}
+
+function renderEvolutionStats(stats) {
+    const dualLoop = stats.dual_loop || {};
+    dom.evolutionStats.innerHTML = `
+        <div class="evolution-stat-card">
+            <div class="stat-label">进化次数</div>
+            <div class="stat-value">${dualLoop.evolution_count || 0}</div>
+        </div>
+        <div class="evolution-stat-card">
+            <div class="stat-label">外层循环</div>
+            <div class="stat-value">${dualLoop.outer_loop_count || 0}</div>
+        </div>
+        <div class="evolution-stat-card">
+            <div class="stat-label">内层循环</div>
+            <div class="stat-value">${dualLoop.inner_loop_count || 0}</div>
+        </div>
+        <div class="evolution-stat-card">
+            <div class="stat-label">提案数</div>
+            <div class="stat-value">${dualLoop.proposal_count || 0}</div>
+        </div>
+    `;
+}
+
+function renderProposals(proposals) {
+    if (proposals.length === 0) {
+        dom.proposalList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 40px;">暂无进化提案</div>';
+        return;
+    }
+    
+    dom.proposalList.innerHTML = proposals.map(p => `
+        <div class="proposal-card">
+            <h4>${p.name || '未命名提案'}</h4>
+            <p>${p.description || '无描述'}</p>
+            <div class="proposal-meta">
+                <span>状态: ${p.status || 'pending'}</span>
+                <span>评分: ${p.score || 0}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function runEvolution() {
+    fetch(`${API_BASE}/api/evolution/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outer: true, inner: false })
+    })
+    .then(response => response.json())
+    .then(data => {
+        addMessage('assistant', '进化已执行');
+        loadEvolution();
+    })
+    .catch(error => console.error('Run evolution failed:', error));
+}
+
+function generateSkill() {
+    const requirement = prompt('输入技能需求:');
+    if (!requirement) return;
+    
+    fetch(`${API_BASE}/api/evolution/generate_skill`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requirement })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            addMessage('assistant', `技能 "${data.name}" 已生成，ID: ${data.skill_id}`);
+            loadSkills();
+        }
+    })
+    .catch(error => console.error('Generate skill failed:', error));
+}
+
+async function loadSecurity() {
+    try {
+        const response = await fetch(`${API_BASE}/api/security/overview`);
+        const data = await response.json();
+        
+        renderSecurityHardBoundary(data.hard_boundary || {});
+        renderSecurityCircuitBreaker(data.circuit_breaker || {});
+        renderSecurityRiskClassifier(data.risk_classifier || {});
+        renderSecurityAudit(data.audit_log || []);
+        renderSecurityCompliance(data.compliance || {});
+    } catch (error) {
+        console.error('Failed to load security:', error);
+        renderSecurityFallback();
+    }
+}
+
+function renderSecurityFallback() {
+    dom.securityHardBoundary.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+    dom.securityCircuitBreaker.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+    dom.securityRiskClassifier.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+    dom.securityAudit.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+    dom.securityCompliance.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+}
+
+function renderSecurityHardBoundary(boundary) {
+    dom.securityHardBoundary.innerHTML = `
+        <div class="status-item">
+            <span class="status-dot ${boundary.active ? 'online' : 'offline'}"></span>
+            <span class="status-label">状态</span>
+            <span class="status-value">${boundary.active ? '激活' : '未激活'}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">规则数</span>
+            <span class="status-value">${boundary.rule_count || 0}</span>
+        </div>
+    `;
+}
+
+function renderSecurityCircuitBreaker(circuit) {
+    dom.securityCircuitBreaker.innerHTML = `
+        <div class="status-item">
+            <span class="status-dot ${circuit.tripped ? 'error' : 'online'}"></span>
+            <span class="status-label">状态</span>
+            <span class="status-value">${circuit.tripped ? '已熔断' : '正常'}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">故障数</span>
+            <span class="status-value">${circuit.failure_count || 0}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">阈值</span>
+            <span class="status-value">${circuit.threshold || 10}</span>
+        </div>
+    `;
+}
+
+function renderSecurityRiskClassifier(classifier) {
+    dom.securityRiskClassifier.innerHTML = `
+        <div class="status-item">
+            <span class="status-label">高风险</span>
+            <span class="status-value">${classifier.high_risk || 0}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">中风险</span>
+            <span class="status-value">${classifier.medium_risk || 0}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">低风险</span>
+            <span class="status-value">${classifier.low_risk || 0}</span>
+        </div>
+    `;
+}
+
+function renderSecurityAudit(audit) {
+    if (audit.length === 0) {
+        dom.securityAudit.innerHTML = '<div style="color: var(--text-muted);">暂无审计记录</div>';
+        return;
+    }
+    
+    dom.securityAudit.innerHTML = audit.slice(0, 10).map(entry => `
+        <div style="padding: 8px; border-bottom: 1px solid var(--border-color); font-size: 12px;">
+            <span style="color: var(--text-primary);">${entry.action || '未知操作'}</span>
+            <span style="color: var(--text-muted); margin-left: 12px;">${formatTime(entry.timestamp)}</span>
+        </div>
+    `).join('');
+}
+
+function renderSecurityCompliance(compliance) {
+    dom.securityCompliance.innerHTML = `
+        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            ${compliance.checks?.map(check => `
+                <div style="padding: 12px 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                    <span>${check.name || '检查项'}:</span>
+                    <span style="margin-left: 8px; color: ${check.passed ? 'var(--success-color)' : 'var(--error-color)'}; font-weight: bold;">${check.passed ? '通过' : '失败'}</span>
+                </div>
+            `).join('') || '<div style="color: var(--text-muted);">暂无合规检查</div>'}
+        </div>
+    `;
+}
+
+async function loadSelfImprovement() {
+    try {
+        const response = await fetch(`${API_BASE}/api/self_improvement/overview`);
+        const data = await response.json();
+        
+        renderSelfImprovementPerformance(data.performance || {});
+        renderSelfImprovementDiagnostic(data.diagnostic || {});
+        renderSelfImprovementProposals(data.proposals || []);
+        renderSelfImprovementSafety(data.safety || {});
+    } catch (error) {
+        console.error('Failed to load self improvement:', error);
+        renderSelfImprovementFallback();
+    }
+}
+
+function renderSelfImprovementFallback() {
+    dom.improvementPerformance.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+    dom.improvementDiagnostic.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+    dom.improvementProposals.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+    dom.improvementSafety.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+}
+
+function renderSelfImprovementPerformance(performance) {
+    dom.improvementPerformance.innerHTML = `
+        <div class="status-item">
+            <span class="status-label">综合评分</span>
+            <span class="status-value">${performance.overall_score || 0}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">推理效率</span>
+            <span class="status-value">${performance.reasoning_efficiency || 0}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">学习能力</span>
+            <span class="status-value">${performance.learning_capability || 0}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">稳定性</span>
+            <span class="status-value">${performance.stability || 0}</span>
+        </div>
+    `;
+}
+
+function renderSelfImprovementDiagnostic(diagnostic) {
+    dom.improvementDiagnostic.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${diagnostic.issues?.map((issue, i) => `
+                <div style="padding: 8px; background: var(--bg-secondary); border-radius: var(--radius-sm); font-size: 12px;">
+                    <span style="color: ${issue.severity === 'high' ? 'var(--error-color)' : 'var(--warning-color)'};">${i + 1}. ${issue.description}</span>
+                </div>
+            `).join('') || '<div style="color: var(--text-muted);">暂无诊断问题</div>'}
+        </div>
+    `;
+}
+
+function renderSelfImprovementProposals(proposals) {
+    if (proposals.length === 0) {
+        dom.improvementProposals.innerHTML = '<div style="color: var(--text-muted);">暂无改进提案</div>';
+        return;
+    }
+    
+    dom.improvementProposals.innerHTML = proposals.map(p => `
+        <div style="padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-sm); margin-bottom: 8px;">
+            <h4 style="font-size: 13px; margin-bottom: 4px;">${p.title}</h4>
+            <p style="font-size: 12px; color: var(--text-secondary);">${p.description}</p>
+            <span style="font-size: 11px; color: var(--text-muted);">优先级: ${p.priority}</span>
+        </div>
+    `).join('');
+}
+
+function renderSelfImprovementSafety(safety) {
+    dom.improvementSafety.innerHTML = `
+        <div class="status-item">
+            <span class="status-dot ${safety.verified ? 'online' : 'warning'}"></span>
+            <span class="status-label">安全验证</span>
+            <span class="status-value">${safety.verified ? '已验证' : '待验证'}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">验证次数</span>
+            <span class="status-value">${safety.verification_count || 0}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">安全等级</span>
+            <span class="status-value">${safety.level || '中等'}</span>
+        </div>
+    `;
+}
+
+function runDiagnostic() {
+    fetch(`${API_BASE}/api/self_improvement/diagnose`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        addMessage('assistant', '诊断已完成');
+        loadSelfImprovement();
+    })
+    .catch(error => console.error('Run diagnostic failed:', error));
+}
+
+function generateProposals() {
+    fetch(`${API_BASE}/api/self_improvement/proposals`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        addMessage('assistant', '改进提案已生成');
+        loadSelfImprovement();
+    })
+    .catch(error => console.error('Generate proposals failed:', error));
+}
+
+async function loadSkills() {
+    try {
+        const response = await fetch(`${API_BASE}/api/skills/list`);
+        const data = await response.json();
+        
+        renderSkills(data.skills || []);
+    } catch (error) {
+        console.error('Failed to load skills:', error);
+        dom.skillsList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 40px;">加载失败</div>';
+    }
+}
+
+function renderSkills(skills) {
+    if (skills.length === 0) {
+        dom.skillsList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 40px;">暂无技能</div>';
+        return;
+    }
+    
+    dom.skillsList.innerHTML = skills.map(skill => `
+        <div class="skill-card">
+            <h4>${skill.name || '未命名技能'}</h4>
+            <p>${skill.description || '无描述'}</p>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <span style="padding: 4px 8px; background: var(--bg-secondary); border-radius: 4px; font-size: 11px;">状态: ${skill.status || 'active'}</span>
+                <span style="padding: 4px 8px; background: var(--bg-secondary); border-radius: 4px; font-size: 11px;">版本: ${skill.version || '1.0'}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadKnowledge() {
+    try {
+        const response = await fetch(`${API_BASE}/api/knowledge/graph`);
+        const data = await response.json();
+        
+        renderKnowledgeStats(data.stats || {});
+        renderKnowledgeGraph(data.graph || {});
+    } catch (error) {
+        console.error('Failed to load knowledge:', error);
+        dom.knowledgeStats.innerHTML = '<div style="color: var(--text-muted);">加载失败</div>';
+        dom.knowledgeGraph.innerHTML = '<div class="knowledge-graph-visual">加载失败</div>';
+    }
+}
+
+function renderKnowledgeStats(stats) {
+    dom.knowledgeStats.innerHTML = `
+        <span>节点数: <strong>${stats.nodes || 0}</strong></span>
+        <span>边数: <strong>${stats.edges || 0}</strong></span>
+        <span>相似度阈值: <strong>${stats.similarity_threshold || 0.8}</strong></span>
+    `;
+}
+
+function renderKnowledgeGraph(graph) {
+    if (!graph.nodes || graph.nodes.length === 0) {
+        dom.knowledgeGraph.innerHTML = '<div class="knowledge-graph-visual">暂无知识图谱数据</div>';
+        return;
+    }
+    
+    dom.knowledgeGraph.innerHTML = `
+        <div class="knowledge-graph-visual">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <h4 style="color: var(--text-primary);">节点列表</h4>
+                ${graph.nodes.map(node => `
+                    <div style="padding: 8px 12px; background: var(--bg-secondary); border-radius: var(--radius-sm); font-size: 13px;">
+                        <span style="color: var(--primary-color);">${node.name || node.id}</span>
+                        ${node.category ? `<span style="color: var(--text-muted); margin-left: 8px;">[${node.category}]</span>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+            ${graph.edges && graph.edges.length > 0 ? `
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+                    <h4 style="color: var(--text-primary);">关系边</h4>
+                    ${graph.edges.map(edge => `
+                        <div style="padding: 8px 12px; background: var(--bg-secondary); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary);">
+                            ${edge.source} --${edge.relation || '关联'}--> ${edge.target}
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+async function loadSynapticActivity() {
+    try {
+        const response = await fetch(`${API_BASE}/api/synaptic/activity`);
+        const data = await response.json();
+        
+        renderSynapticStats(data);
+        renderModuleActivity(data.modules || {});
+    } catch (error) {
+        console.error('Failed to load synaptic activity:', error);
+    }
+}
+
+function renderSynapticStats(data) {
+    if (!dom.synapticStats) return;
+    
+    dom.synapticStats.innerHTML = `
+        <span class="synaptic-stat-item"><span>模块数:</span><span>${data.total_modules || 0}</span></span>
+        <span class="synaptic-stat-item"><span>突触数:</span><span>${data.total_synapses || 0}</span></span>
+        <span class="synaptic-stat-item"><span>活跃突触:</span><span>${data.active_synapses || 0}</span></span>
+    `;
+}
+
+function renderModuleActivity(modules) {
+    if (!dom.moduleActivityList) return;
+    
+    const moduleNames = {
+        'memory': '记忆', 'knowledge_graph': '知识图谱', 'decision': '决策',
+        'execution': '执行', 'perception': '感知', 'security': '安全',
+        'soul': 'SOUL', 'skills': '技能', 'evolution': '进化',
+        'self_improvement': '自我改进', 'metacognition': '元认知', 'homeostasis': '稳态'
+    };
+    
+    dom.moduleActivityList.innerHTML = Object.entries(modules).map(([id, module]) => {
+        const activity = module.spike_rate || 0;
+        return `
+            <div class="module-activity-item">
+                <span class="module-activity-name">${moduleNames[id] || id}</span>
+                <div class="module-activity-bar">
+                    <div class="module-activity-fill" style="width: ${Math.min(100, activity * 10)}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function loadSynapticConnections() {
+    try {
+        const response = await fetch(`${API_BASE}/api/synaptic/connections`);
+        const data = await response.json();
+        
+        renderSynapticGraph(data);
+    } catch (error) {
+        console.error('Failed to load synaptic connections:', error);
+    }
+}
+
+function renderSynapticGraph(data) {
+    if (!dom.synapticGraph || !data.nodes || !data.edges) return;
+    
+    const width = dom.synapticGraph.clientWidth;
+    const height = dom.synapticGraph.clientHeight;
+    
+    const nodePositions = {};
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) / 2 - 50;
+    
+    data.nodes.forEach((node, index) => {
+        const angle = (index / data.nodes.length) * 2 * Math.PI - Math.PI / 2;
+        nodePositions[node.id] = {
+            x: centerX + radius * Math.cos(angle),
+            y: centerY + radius * Math.sin(angle)
+        };
+    });
+    
+    const edgeColors = {
+        'excitatory': '#22c55e',
+        'inhibitory': '#ef4444',
+        'modulatory': '#8b5cf6'
+    };
+    
+    dom.synapticGraph.innerHTML = `
+        <svg width="${width}" height="${height}">
+            <defs>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+            ${data.edges.map(edge => {
+                const source = nodePositions[edge.source];
+                const target = nodePositions[edge.target];
+                if (!source || !target) return '';
+                
+                const color = edgeColors[edge.type] || '#6b7280';
+                const width = Math.max(1, edge.weight * 3);
+                
+                return `
+                    <line x1="${source.x}" y1="${source.y}" x2="${target.x}" y2="${target.y}"
+                        class="synaptic-edge"
+                        stroke="${color}" stroke-width="${width}"
+                        style="opacity: ${edge.weight}"/>
+                `;
+            }).join('')}
+            ${data.nodes.map(node => {
+                const pos = nodePositions[node.id];
+                if (!pos) return '';
+                
+                return `
+                    <g class="synaptic-node" data-node="${node.id}">
+                        <circle cx="${pos.x}" cy="${pos.y}" r="16"
+                            fill="var(--bg-card)" stroke="var(--primary-color)" stroke-width="2"
+                            filter="url(#glow)"/>
+                        <text x="${pos.x}" y="${pos.y + 4}" text-anchor="middle"
+                            fill="var(--text-primary)" font-size="10">
+                            ${node.name.substring(0, 4)}
+                        </text>
+                    </g>
+                `;
+            }).join('')}
+        </svg>
+    `;
+}
+
+async function loadOscillatorStatus() {
+    try {
+        const response = await fetch(`${API_BASE}/api/synaptic/oscillator`);
+        const data = await response.json();
+        
+        renderOscillator(data);
+    } catch (error) {
+        console.error('Failed to load oscillator:', error);
+    }
+}
+
+function renderOscillator(data) {
+    if (!dom.oscillatorDisplay) return;
+    
+    dom.oscillatorDisplay.innerHTML = `
+        <div>
+            <div class="oscillator-wave">
+                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 100%; height: 2px; background: var(--border-color); position: relative;">
+                        <div style="position: absolute; top: 50%; left: ${(data.theta + 1) / 2 * 100}%; width: 6px; height: 6px; background: var(--primary-color); border-radius: 50%; transform: translateY(-50%);"></div>
+                    </div>
+                </div>
+            </div>
+            <span class="oscillator-label">Theta (5Hz): ${data.theta ? data.theta.toFixed(2) : '--'}</span>
+        </div>
+        <div>
+            <div class="oscillator-wave">
+                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 100%; height: 2px; background: var(--border-color); position: relative;">
+                        <div style="position: absolute; top: 50%; left: ${(data.gamma + 1) / 2 * 100}%; width: 6px; height: 6px; background: var(--success-color); border-radius: 50%; transform: translateY(-50%);"></div>
+                    </div>
+                </div>
+            </div>
+            <span class="oscillator-label">Gamma (40Hz): ${data.gamma ? data.gamma.toFixed(2) : '--'}</span>
+        </div>
+        <div>
+            <div class="oscillator-wave">
+                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 100%; height: 2px; background: var(--border-color); position: relative;">
+                        <div style="position: absolute; top: 50%; left: ${(data.alpha + 1) / 2 * 100}%; width: 6px; height: 6px; background: var(--warning-color); border-radius: 50%; transform: translateY(-50%);"></div>
+                    </div>
+                </div>
+            </div>
+            <span class="oscillator-label">Alpha (10Hz): ${data.alpha ? data.alpha.toFixed(2) : '--'}</span>
+        </div>
+    `;
+}
+
+async function loadSignalFlow() {
+    try {
+        const response = await fetch(`${API_BASE}/api/synaptic/signal_flow`);
+        const data = await response.json();
+        
+        renderSignalFlow(data);
+    } catch (error) {
+        console.error('Failed to load signal flow:', error);
+    }
+}
+
+function renderSignalFlow(data) {
+    if (!dom.signalFlowChart || !data.signal_flow) return;
+    
+    const flowItems = [];
+    Object.entries(data.signal_flow).forEach(([module, stats]) => {
+        flowItems.push({
+            module,
+            spikes: stats.spikes || 0
+        });
+    });
+    
+    flowItems.sort((a, b) => b.spikes - a.spikes);
+    
+    const moduleNames = {
+        'memory': '记忆', 'knowledge_graph': '知识图谱', 'decision': '决策',
+        'execution': '执行', 'perception': '感知', 'security': '安全',
+        'soul': 'SOUL', 'skills': '技能', 'evolution': '进化',
+        'self_improvement': '自我改进', 'metacognition': '元认知', 'homeostasis': '稳态'
+    };
+    
+    dom.signalFlowChart.innerHTML = flowItems.map(item => `
+        <div class="signal-flow-item">
+            <div class="signal-flow-icon"></div>
+            <span class="signal-flow-path">${moduleNames[item.module] || item.module}</span>
+            <span class="signal-flow-value">${item.spikes} 脉冲</span>
+        </div>
+    `).join('');
+}
+
+async function loadSynapticData() {
+    await Promise.all([
+        loadSynapticActivity(),
+        loadSynapticConnections(),
+        loadOscillatorStatus(),
+        loadSignalFlow()
+    ]);
 }
 
 async function init() {
-    await I18N.init();
-    await loadSettings();
-    await checkAgentStatus();
-    setInterval(checkAgentStatus, 5000);
     initEventListeners();
-    initSensors();
-    initWebSocket();
-    initSkillsStore();
-    initPanelDragAndDrop();
-    initLanguageSelector();
-
-    if (isAgentRunning) {
-        updateAgentStatus(true);
-        startMentalArchitectureRefresh();
-    }
-    
-    startOnlineAgentsRefresh();
-
-    setInterval(() => {
-        if (currentChannel) {
-            loadChannelMessages(currentChannel);
-        }
-    }, 3000);
-
-    updateUIWithCurrentLang();
-}
-
-function initLanguageSelector() {
-    const selector = document.getElementById('languageSelector');
-    if (selector) {
-        selector.value = I18N.getCurrentLang();
-        selector.addEventListener('change', async (e) => {
-            await I18N.loadLang(e.target.value);
-            updateUIWithCurrentLang();
-        });
-    }
-}
-
-function updateUIWithCurrentLang() {
-    const statusText = isAgentRunning ? I18N.get('app.status.online') : I18N.get('app.status.offline');
-    const statusSpan = dom.agentStatus?.querySelector('span:last-child');
-    if (statusSpan) statusSpan.textContent = statusText;
-
-    const startBtn = document.getElementById('startAgentBtn');
-    if (startBtn) startBtn.textContent = I18N.get('app.startBtn');
-
-    const stopBtn = document.getElementById('stopAgentBtn');
-    if (stopBtn) stopBtn.textContent = I18N.get('app.stopBtn');
-
-    const chatInput = document.getElementById('chatInput');
-    if (chatInput) chatInput.placeholder = I18N.get('chat.inputPlaceholder');
-
-    const sendBtn = document.getElementById('sendBtn');
-    if (sendBtn) sendBtn.textContent = I18N.get('chat.sendBtn');
-
-    const channelTabs = document.querySelectorAll('.channel-tab');
-    channelTabs.forEach(tab => {
-        const channel = tab.dataset.channel;
-        if (channel) {
-            tab.textContent = I18N.get(`chat.channels.${channel}`);
-        }
-    });
-
-    const onlineLabel = document.querySelector('.online-label');
-    if (onlineLabel) onlineLabel.textContent = I18N.get('chat.onlineAgents');
-
-    const panelHeaders = {
-        'panel-chat': 'chat.title',
-        'panel-self-awareness': 'selfAwareness.title',
-        'panel-memory': 'memory.title',
-        'panel-metrics': 'metrics.title',
-        'panel-thinking': 'thinking.title',
-        'panel-decision': 'decision.title',
-        'panel-personality': 'personality.title',
-        'panel-knowledge': 'knowledge.title',
-        'panel-learning': 'learning.title',
-        'panel-logs': 'logs.title',
-        'panel-file-ingestion': 'fileIngestion.title',
-        'panel-mental': 'mental.title',
-        'panel-action': 'action.title',
-        'panel-evolution': 'evolution.title'
-    };
-
-    Object.entries(panelHeaders).forEach(([panelId, key]) => {
-        const panel = document.getElementById(panelId);
-        if (panel) {
-            const h2 = panel.querySelector('h2');
-            if (h2) h2.textContent = I18N.get(key);
-        }
-    });
-
-    const selfAwarenessLabels = {
-        '自我识别': I18N.get('selfAwareness.metrics.selfRecognition'),
-        '能力意识': I18N.get('selfAwareness.metrics.capabilityAwareness'),
-        '局限意识': I18N.get('selfAwareness.metrics.limitationAwareness'),
-        '存在意识': I18N.get('selfAwareness.metrics.existenceAwareness'),
-        '时间连续性': I18N.get('selfAwareness.metrics.temporalContinuity')
-    };
-    document.querySelectorAll('.self-metric-label').forEach(label => {
-        const text = label.textContent;
-        if (selfAwarenessLabels[text]) {
-            label.textContent = selfAwarenessLabels[text];
-        }
-    });
-
-    const memorySectionNames = {
-        'L1 瞬时记忆': I18N.get('memory.sections.l1'),
-        'L2 短期记忆': I18N.get('memory.sections.l2'),
-        'L3 长期记忆': I18N.get('memory.sections.l3'),
-        'L4 语义记忆': I18N.get('memory.sections.l4')
-    };
-    document.querySelectorAll('.memory-section-name').forEach(name => {
-        const text = name.textContent;
-        if (memorySectionNames[text]) {
-            name.textContent = memorySectionNames[text];
-        }
-    });
-
-    const metricLabels = {
-        '自由能': I18N.get('metrics.labels.freeEnergy'),
-        '置信度': I18N.get('metrics.labels.confidence'),
-        '新颖度': I18N.get('metrics.labels.novelty'),
-        '熵': I18N.get('metrics.labels.entropy'),
-        '步数': I18N.get('metrics.labels.step'),
-        '延迟(ms)': I18N.get('metrics.labels.latency')
-    };
-    document.querySelectorAll('.metric-label').forEach(label => {
-        const text = label.textContent;
-        if (metricLabels[text]) {
-            label.textContent = metricLabels[text];
-        }
-    });
-
-    const thinkingLabels = {
-        '思考模式:': I18N.get('thinking.stats.mode') + ':',
-        '系统2调用:': I18N.get('thinking.stats.system2') + ':',
-        '思考置信度:': I18N.get('thinking.stats.confidence') + ':'
-    };
-    document.querySelectorAll('.thinking-stat-label').forEach(label => {
-        const text = label.textContent;
-        if (thinkingLabels[text]) {
-            label.textContent = thinkingLabels[text];
-        }
-    });
-
-    const problemInput = document.getElementById('problemInput');
-    if (problemInput) problemInput.placeholder = I18N.get('thinking.inputPlaceholder');
-
-    const decomposeBtn = document.getElementById('decomposeBtn');
-    if (decomposeBtn) decomposeBtn.textContent = I18N.get('thinking.decomposeBtn');
-
-    const criticalInput = document.getElementById('criticalInput');
-    if (criticalInput) criticalInput.placeholder = I18N.get('thinking.criticalInputPlaceholder');
-
-    const criticalBtn = document.getElementById('criticalBtn');
-    if (criticalBtn) criticalBtn.textContent = I18N.get('thinking.criticalBtn');
-
-    const personalityTraits = {
-        '好奇心': I18N.get('personality.traits.curiosity'),
-        '果断性': I18N.get('personality.traits.assertiveness'),
-        '谨慎性': I18N.get('personality.traits.cautiousness'),
-        '创造力': I18N.get('personality.traits.creativity'),
-        '耐心': I18N.get('personality.traits.patience')
-    };
-    document.querySelectorAll('.trait-label').forEach(label => {
-        const text = label.textContent;
-        if (personalityTraits[text]) {
-            label.textContent = personalityTraits[text];
-        }
-    });
-
-    const personalityValues = {
-        '生存': I18N.get('personality.values.survival'),
-        '知识': I18N.get('personality.values.knowledge'),
-        '成长': I18N.get('personality.values.growth')
-    };
-    document.querySelectorAll('.value-label').forEach(label => {
-        const text = label.textContent;
-        if (personalityValues[text]) {
-            label.textContent = personalityValues[text];
-        }
-    });
-
-    const logFilterOptions = {
-        '全部': I18N.get('logs.filter.all'),
-        '信息': I18N.get('logs.filter.info'),
-        '警告': I18N.get('logs.filter.warning'),
-        '错误': I18N.get('logs.filter.error')
-    };
-    const logFilter = document.getElementById('logLevelFilter');
-    if (logFilter) {
-        Array.from(logFilter.options).forEach(opt => {
-            if (logFilterOptions[opt.textContent]) {
-                opt.textContent = logFilterOptions[opt.textContent];
-            }
-        });
-    }
-
-    const uploadDropZone = document.querySelector('.upload-text');
-    if (uploadDropZone) uploadDropZone.textContent = I18N.get('fileIngestion.upload.dropZone');
-
-    const fileSearchInput = document.getElementById('fileSearchInput');
-    if (fileSearchInput) fileSearchInput.placeholder = I18N.get('fileIngestion.search.placeholder');
-
-    const fileSearchBtn = document.getElementById('fileSearchBtn');
-    if (fileSearchBtn) fileSearchBtn.textContent = I18N.get('fileIngestion.search.btn');
-
-    const fileSearchType = document.getElementById('fileSearchType');
-    if (fileSearchType) {
-        Array.from(fileSearchType.options).forEach(opt => {
-            if (opt.textContent === '内容搜索') opt.textContent = I18N.get('fileIngestion.search.content');
-            if (opt.textContent === '语义搜索') opt.textContent = I18N.get('fileIngestion.search.embedding');
-        });
-    }
-
-    const mentalLayers = {
-        '反射层': I18N.get('mental.layers.reflex'),
-        '慎思层': I18N.get('mental.layers.deliberative'),
-        '元认知层': I18N.get('mental.layers.meta')
-    };
-    document.querySelectorAll('.layer-name').forEach(name => {
-        const text = name.textContent;
-        if (mentalLayers[text]) {
-            name.textContent = mentalLayers[text];
-        }
-    });
-
-    const actionStatLabels = {
-        '任务拆解': I18N.get('action.stats.decomposition'),
-        '路径规划': I18N.get('action.stats.pathPlanning'),
-        '执行次数': I18N.get('action.stats.executions'),
-        '成功率': I18N.get('action.stats.successRate'),
-        '活跃目标': I18N.get('action.stats.activeGoals'),
-        '探索行动': I18N.get('action.stats.exploration')
-    };
-    document.querySelectorAll('.action-stat-label').forEach(label => {
-        const text = label.textContent;
-        if (actionStatLabels[text]) {
-            label.textContent = actionStatLabels[text];
-        }
-    });
-
-    const actionStepsLabel = document.querySelector('.action-control-row label');
-    if (actionStepsLabel) actionStepsLabel.textContent = I18N.get('action.controls.steps') + ':';
-
-    const executeBtn = document.getElementById('executeRunStepsBtn');
-    if (executeBtn) executeBtn.textContent = I18N.get('action.controls.executeBtn');
-
-    const evolutionStages = {
-        '微进化': I18N.get('evolution.stages.micro'),
-        '突触级': I18N.get('evolution.stages.microSub'),
-        '中进化': I18N.get('evolution.stages.meso'),
-        '规则技能级': I18N.get('evolution.stages.mesoSub'),
-        '宏进化': I18N.get('evolution.stages.macro'),
-        '架构级': I18N.get('evolution.stages.macroSub'),
-        '元进化': I18N.get('evolution.stages.meta'),
-        '系统级': I18N.get('evolution.stages.metaSub')
-    };
-    document.querySelectorAll('.stage-name, .stage-subtitle').forEach(el => {
-        const text = el.textContent;
-        if (evolutionStages[text]) {
-            el.textContent = evolutionStages[text];
-        }
-    });
+    checkAgentStatus();
+    refreshOverview();
+    loadSessions();
+    loadAgents();
 }
 
 document.addEventListener('DOMContentLoaded', init);
