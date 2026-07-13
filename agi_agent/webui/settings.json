@@ -5,7 +5,11 @@
   "save_interval": 1000,
   "free_energy_threshold": 0.51,
   "novelty_threshold": 0.5,
+<<<<<<< HEAD
   "auto_start": true,
+=======
+  "auto_start": false,
+>>>>>>> bf5a445d60c0886284e0b033350e688c8852e22c
   "sensor_enabled": true,
   "voice_input": false,
   "theme": "dark"
