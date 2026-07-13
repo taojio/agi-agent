@@ -90,6 +90,11 @@ const dom = {
     soulSections: document.querySelectorAll('.soul-section'),
     soulName: document.getElementById('soulName'),
     soulRole: document.getElementById('soulRole'),
+    soulRigor: document.getElementById('soulRigor'),
+    soulCreativity: document.getElementById('soulCreativity'),
+    soulGoalsContent: document.getElementById('soulGoalsContent'),
+    soulBoundariesContent: document.getElementById('soulBoundariesContent'),
+    soulPermissionsContent: document.getElementById('soulPermissionsContent'),
     saveSoulBtn: document.getElementById('saveSoulBtn'),
     exportSoulBtn: document.getElementById('exportSoulBtn'),
     

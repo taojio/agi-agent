@@ -13,15 +13,15 @@ from agi_agent.cognitive import CognitiveInferenceLayer, DualSystemCognition, SN
 from agi_agent.learning import MetaLearningLayer, KnowledgeGraph, StructuredKnowledgeIngestor
 from agi_agent.evolution import EvolutionEngine, MetaSkillGenerator, DualLoopEvolution, EvolutionLevel, QuadLevelEvolution
 from agi_agent.execution import ActionExecutionLayer
-from agi_agent.metacognition import MetaCognitionLayer
+from agi_agent.meta_cognitive import MetaCognitionLayer
 from agi_agent.homeostasis import HomeostasisEngine
 from agi_agent.storage import PersistenceManager
 from agi_agent.security import SafetyMonitor, ComplianceChecker, HardBoundarySystem, RiskClassifier, CircuitBreaker, AuditTrail
 from agi_agent.evaluation import PerformanceEvaluator, MetricsVisualizer
 from agi_agent.plugins import PluginManager, PluginHookPoint
 from agi_agent.skills import SkillsManager
-from agi_agent.decision import AutonomousDecisionEngine, ActionPlanner, ExecutionMonitor
-from agi_agent.self_improvement import RecursiveSelfImprover, PerformanceEvaluator as SelfPerfEvaluator, SelfDiagnosticEngine, ImprovementSafetyVerifier, BootstrappedSelfImprover
+from agi_agent.decision import AutonomousDecisionEngine, ActionPlanner, ExecutionMonitor, WorldModelDecisionBridge
+from agi_agent.self_improvement import RecursiveSelfImprover, PerformanceEvaluator as SelfPerfEvaluator, SelfDiagnosticEngine, ImprovementSafetyVerifier, BootstrappedSelfImprover, AutomatedSelfImprovementLoop
 
 from agi_agent.memory import MemoryHarness, MemoryStore, MemoryTier, MemoryCategory
 from agi_agent.soul import SOULParser, SOULModel, IdentityAnchor, GoalTree, BehaviorBoundary, PermissionWhitelist, VersionInfo
@@ -29,10 +29,22 @@ from agi_agent.multi_agent import AgentSwarm, WorkspaceManager, HierarchicalDisp
 from agi_agent.task_engine import DAGEngine, AsyncTaskBoard, CheckpointManager, HeartbeatScheduler, TaskPriority
 
 from agi_agent.reflex import ReflexController
-from agi_agent.deliberative import ThinkingOrchestrator
+from agi_agent.deliberative import ThinkingOrchestrator, AdvancedReasoner, AbstractionEngine, NeuroSymbolicReasoner, NeuroSymbolicWorldCoordinator
 from agi_agent.meta_cognitive import MetaCognitiveOrchestrator, SelfModel as NewSelfModel
 from agi_agent.autonomous_action import ActionOrchestrator
 from agi_agent.personality import PersonalityCore
+from agi_agent.cognitive.context_awareness import ContextAwarenessEngine, ContextFrame, SceneType, ContextType
+from agi_agent.cognitive.world_model import WorldModelEngine, EntityCategory
+from agi_agent.learning.enhanced_knowledge_graph import EnhancedKnowledgeGraph, RelationType, KGNode, EntityType
+from agi_agent.learning.learning_planner import LearningPlanner, LearningGoalType, LearningPriority
+from agi_agent.learning.knowledge_integrator import KnowledgeIntegrator, IntegrationStrategy, DomainType
+
+from agi_agent.meta_programming import MetaProgrammingOrchestrator
+from agi_agent.meta_learning import MetaLearningOrchestrator
+from agi_agent.meta_decision import MetaDecisionOrchestrator
+from agi_agent.meta_parsing import ParsingOrchestrator
+from agi_agent.meta_evolution import EvolutionOrchestrator
+from agi_agent.orchestration import AutomationLinkageEngine, create_default_linkage_rules
 
 
 class SelfEvolvingAGI:
@@ -52,6 +64,30 @@ class SelfEvolvingAGI:
         self.evolve_engine = EvolutionEngine(config_path=config_path)
         self.execution = ActionExecutionLayer(action_dim=8, feature_dim=self.perception.get_feature_dim())
         self.knowledge_graph = KnowledgeGraph()
+
+        self.advanced_reasoner = AdvancedReasoner(feature_dim=self.perception.get_feature_dim())
+        self.abstraction_engine = AbstractionEngine(feature_dim=self.perception.get_feature_dim())
+        self.context_awareness = ContextAwarenessEngine()
+        self.enhanced_knowledge_graph = EnhancedKnowledgeGraph()
+        self.learning_planner = LearningPlanner()
+        self.knowledge_integrator = KnowledgeIntegrator()
+
+        self.neuro_symbolic_reasoner = NeuroSymbolicReasoner(
+            symbol_dim=self.perception.get_feature_dim(),
+            hidden_dim=self.perception.get_feature_dim() * 2
+        )
+        self.world_model_engine = WorldModelEngine(
+            feature_dim=self.perception.get_feature_dim(),
+            history_length=100
+        )
+        self.world_model_bridge = WorldModelDecisionBridge(
+            world_model=self.world_model_engine,
+            feature_dim=self.perception.get_feature_dim()
+        )
+        self.neuro_symbolic_coordinator = NeuroSymbolicWorldCoordinator(
+            neuro_symbolic_reasoner=self.neuro_symbolic_reasoner,
+            world_model_engine=self.world_model_engine
+        )
 
         self.self_model = NewSelfModel(feature_dim=self.perception.get_feature_dim())
         self.self_model.update_identity(
@@ -97,6 +133,7 @@ class SelfEvolvingAGI:
         self.self_improver = RecursiveSelfImprover()
         self.safety_verifier = ImprovementSafetyVerifier()
         self.bootstrap_improver = BootstrappedSelfImprover()
+        self.automated_improvement_loop = AutomatedSelfImprovementLoop()
 
         self.memory_store = MemoryStore()
         self.memory_harness = MemoryHarness(self.memory_store)
@@ -139,6 +176,17 @@ class SelfEvolvingAGI:
 
         self.personality = PersonalityCore(name="AGI_Agent")
 
+        self.meta_programming = MetaProgrammingOrchestrator()
+        self.meta_learning_orchestrator = MetaLearningOrchestrator()
+        self.meta_decision_orchestrator = MetaDecisionOrchestrator()
+        self.meta_parsing = ParsingOrchestrator()
+        self.meta_evolution = EvolutionOrchestrator()
+
+        # 自动化联动引擎
+        self.linkage_engine = AutomationLinkageEngine()
+        for rule in create_default_linkage_rules():
+            self.linkage_engine.register_rule(rule)
+
         self._initialize_safety_boundaries()
 
         self.quad_level_evolution.set_interfaces(
@@ -159,6 +207,21 @@ class SelfEvolvingAGI:
         self.autonomous_check_interval = 5.0
 
         self._init_module_synaptic_bus()
+        self._init_world_model_decision_integration()
+        self._init_automated_improvement_loop()
+
+    def _init_world_model_decision_integration(self):
+        self.decision_engine.set_world_model_bridge(self.world_model_bridge)
+        print(f"[OK] WorldModelDecisionBridge 集成完成")
+        print(f"  - 决策引擎已连接世界模型")
+        print(f"  - 特征维度: {self.perception.get_feature_dim()}")
+
+    def _init_automated_improvement_loop(self):
+        self.automated_improvement_loop.set_agent_ref(self)
+        self.automated_improvement_loop.bootstrap_improver = self.bootstrap_improver
+        print(f"[OK] AutomatedSelfImprovementLoop 初始化完成")
+        print(f"  - 自动改进间隔: 100 steps")
+        print(f"  - 性能阈值监控已启用")
 
     def _init_module_synaptic_bus(self):
         self.synaptic_bus = ModuleSynapticBus(config={
@@ -318,6 +381,23 @@ class SelfEvolvingAGI:
         self._process_architecture_mutation(confidence, mutation_proposal, causal_result)
 
         self._run_meta_cognition(action, fe, confidence, entropy_val, kl_shift, system_used)
+
+        self._run_enhanced_reasoning(fused_feat, confidence)
+        self._run_neuro_symbolic_reasoning(fused_feat, confidence)
+        
+        novelty = calc_novelty(kl_shift)
+        step_context = {
+            "free_energy": fe,
+            "confidence": confidence,
+            "novelty": novelty,
+            "entropy": entropy_val,
+            "step": self.train_step
+        }
+        
+        self._run_meta_level_processing(fused_feat, action, fe, confidence, novelty, entropy_val)
+        self._run_context_awareness(fused_feat, action, step_context)
+        self._run_world_model_simulation(fused_feat, action, step_context)
+        self._run_active_learning(fused_feat, confidence)
         
         boundary_result = self._run_safety_and_boundary_checks(action, fe, confidence)
         if boundary_result is not None:
@@ -340,7 +420,16 @@ class SelfEvolvingAGI:
             action, system_used, is_impasse, causal_result, orchestrator_result,
             plugin_data, stereoscopic_result, evolution_result
         )
-        
+
+        # 自动化联动引擎：基于系统状态触发跨模块自动响应
+        linkage_state = self.linkage_engine.collect_state(self, metrics)
+        linkage_results = self.linkage_engine.check_and_execute(self, linkage_state)
+        if linkage_results:
+            metrics["linkage_events"] = [
+                {"rule": r.rule_name, "actions": r.actions_executed}
+                for r in linkage_results
+            ]
+
         self.metrics_history.append(metrics)
         self.evaluator.log_evaluation(self.train_step, metrics)
 
@@ -482,6 +571,133 @@ class SelfEvolvingAGI:
             confidence=confidence
         )
 
+    def _run_meta_level_processing(self, fused_feat, action, fe, confidence, novelty, entropy_val):
+        feat_np = fused_feat.detach().cpu().numpy().flatten() if hasattr(fused_feat, 'detach') else np.array(fused_feat).flatten()
+
+        if self.train_step % 50 == 0:
+            self._run_meta_parsing(feat_np)
+
+        if self.train_step % 100 == 0:
+            self._run_meta_decision_monitoring(fe, confidence, novelty)
+
+        if self.train_step % 200 == 0:
+            self._run_meta_learning_strategy(novelty)
+
+        if self.train_step % 500 == 0:
+            self._run_meta_programming_evaluation()
+            self._run_meta_evolution_optimization(fe, confidence, novelty)
+
+    def _run_meta_parsing(self, features):
+        features_str = str(features[:10])
+        parsing_result = self.meta_parsing.parse_and_understand(features_str, format_hint="text")
+        if parsing_result.get("success"):
+            understanding = parsing_result.get("understanding", {})
+            self.memory_harness.add_context_memory(
+                content=f"Meta-parsing: understanding_level={understanding.get('understanding_level', 'unknown')}",
+                category=MemoryCategory.KNOWLEDGE,
+                source_agent="meta_parsing"
+            )
+
+    def _run_meta_decision_monitoring(self, fe, confidence, novelty):
+        decision_id = f"decision_{self.train_step}"
+        self.meta_decision_orchestrator.start_decision(
+            decision_id=decision_id,
+            goal=f"adaptation_at_step_{self.train_step}",
+            decision_type="adaptation"
+        )
+        self.meta_decision_orchestrator.add_factor(decision_id, "free_energy", weight=0.3)
+        self.meta_decision_orchestrator.add_factor(decision_id, "confidence", weight=0.4)
+        self.meta_decision_orchestrator.add_factor(decision_id, "novelty", weight=0.3)
+        self.meta_decision_orchestrator.add_metric(decision_id, "free_energy", fe)
+        self.meta_decision_orchestrator.add_metric(decision_id, "confidence", confidence)
+        self.meta_decision_orchestrator.add_metric(decision_id, "novelty", novelty)
+
+        outcome = "good" if confidence > 0.6 else "needs_improvement"
+        self.meta_decision_orchestrator.complete_decision(decision_id, outcome, confidence)
+
+        if confidence < 0.5:
+            opt_result = self.meta_decision_orchestrator.optimize_strategy("adaptation")
+            if opt_result.get("success"):
+                optimized = opt_result.get("optimized_params", {})
+                if hasattr(self.decision_engine, 'decision_temperature'):
+                    old_temp = self.decision_engine.decision_temperature
+                    new_temp = optimized.get("decision_temperature", old_temp)
+                    self.decision_engine.decision_temperature = max(0.1, min(2.0, new_temp))
+                    self.memory_harness.add_context_memory(
+                        content=f"Meta-decision: temperature {old_temp:.2f} -> {new_temp:.2f}",
+                        category=MemoryCategory.LEARNING,
+                        source_agent="meta_decision"
+                    )
+
+    def _run_meta_learning_strategy(self, novelty):
+        task_type = "exploration" if novelty > 0.5 else "exploitation"
+        complexity = min(1.0, novelty * 1.5)
+        recommendation = self.meta_learning_orchestrator.get_strategy_recommendation(task_type, complexity)
+        
+        self.memory_harness.add_context_memory(
+            content=f"Meta-learning strategy: {recommendation['recommended_strategy']} for {task_type}",
+            category=MemoryCategory.LEARNING,
+            source_agent="meta_learning"
+        )
+
+        strategy = recommendation.get("recommended_strategy", "balanced")
+        current_lr = self.perception.optimizer.param_groups[0]['lr']
+        
+        if strategy == "exploration":
+            new_lr = current_lr * min(1.2, 1.0 + novelty * 0.3)
+            new_lr = min(new_lr, 0.05)
+        elif strategy == "exploitation":
+            new_lr = current_lr * max(0.8, 1.0 - novelty * 0.2)
+            new_lr = max(new_lr, 1e-5)
+        else:
+            new_lr = current_lr
+        
+        if abs(new_lr - current_lr) / (current_lr + 1e-8) > 0.01:
+            self.perception.optimizer.param_groups[0]['lr'] = new_lr
+            self.memory_harness.add_context_memory(
+                content=f"Meta-learning: lr adjusted {current_lr:.6f} -> {new_lr:.6f} ({strategy})",
+                category=MemoryCategory.LEARNING,
+                source_agent="meta_learning"
+            )
+
+    def _run_meta_programming_evaluation(self):
+        task = {
+            "task_type": "analyze",
+            "code": "# Meta-programming evaluation task",
+            "target": "self_evaluation"
+        }
+        result = self.meta_programming.analyze_and_optimize(task["code"], task["target"])
+        if result.get("optimized_code"):
+            self.memory_harness.add_context_memory(
+                content=f"Meta-programming: optimization completed with improvement",
+                category=MemoryCategory.KNOWLEDGE,
+                source_agent="meta_programming"
+            )
+
+    def _run_meta_evolution_optimization(self, fe, confidence, novelty):
+        def fitness_function(params):
+            return 0.6 * (1 - fe) + 0.3 * confidence + 0.1 * novelty
+
+        gene_templates = [
+            {"name": "learning_rate", "type": "float", "min": 0.0001, "max": 0.1},
+            {"name": "exploration_rate", "type": "float", "min": 0.0, "max": 1.0},
+            {"name": "mutation_rate", "type": "float", "min": 0.0, "max": 0.5},
+        ]
+
+        self.meta_evolution.setup_genetic_algorithm(fitness_function, gene_templates)
+        result = self.meta_evolution.run_evolution(f"evolution_{self.train_step}")
+        
+        if result.get("success"):
+            best_genome = result.get("evolution_result", {}).get("best_genome", {})
+            if best_genome:
+                new_lr = best_genome.get("genes", {}).get("learning_rate", 0.001)
+                self.perception.optimizer.param_groups[0]['lr'] = new_lr
+                self.memory_harness.add_context_memory(
+                    content=f"Meta-evolution: learning_rate adjusted to {new_lr:.4f}",
+                    category=MemoryCategory.LEARNING,
+                    source_agent="meta_evolution"
+                )
+
     def _run_safety_and_boundary_checks(self, action, fe, confidence):
         step_time = (time.time() - self._step_start_time) * 1000
         
@@ -539,26 +755,61 @@ class SelfEvolvingAGI:
         if self.train_step % 50 == 0:
             self.decision_engine.generate_goals(internal_state, external_state, self.train_step)
 
+        if self.train_step % 100 == 0:
+            self._run_decision_with_world_model(fused_feat, internal_state, external_state)
+
+    def _run_decision_with_world_model(self, fused_feat, internal_state, external_state):
+        if not hasattr(self, 'world_model_bridge') or self.world_model_bridge is None:
+            return
+
+        feat_np = fused_feat.detach().cpu().numpy().flatten() if hasattr(fused_feat, 'detach') else np.array(fused_feat).flatten()
+
+        available_actions = self.action_planner.get_available_actions(feat_np)
+        if not available_actions:
+            available_actions = [{"action": "execute", "confidence": 0.5}]
+
+        decision_context = {
+            "goal": "world_model_aided_decision",
+            "current_state": internal_state,
+            "available_options": available_actions,
+            "expected_utility": external_state.get("confidence", 0.5),
+            "resource_estimate": {"memory": 0.5, "cpu": 0.3},
+            "risk_level": "low" if external_state.get("confidence", 0.5) > 0.7 else "medium",
+            "goal_state": {"confidence": 0.9, "free_energy": 0.1}
+        }
+
+        decision_result = self.decision_engine.make_decision_with_world_model(
+            context=decision_context,
+            current_features=feat_np
+        )
+
+        if decision_result.get("world_model_support"):
+            self.memory_harness.add_context_memory(
+                content=f"World model aided decision: {decision_result['decision']} with confidence {decision_result['confidence']:.2f}",
+                category="DECISION",
+                source_agent="main"
+            )
+
     def _run_self_improvement(self, fe, confidence, novelty, step_time):
+        current_metrics = {
+            "free_energy": fe,
+            "confidence": confidence,
+            "action_success_rate": float(confidence > 0.5),
+            "stability_score": max(0.0, 1.0 - fe),
+            "safety_compliance_rate": 0.95,
+            "throughput_steps_per_sec": 1000.0 / max(step_time, 1.0),
+            "error_rate": max(0.0, min(1.0, fe / 5.0)),
+            "novelty": novelty,
+        }
+
+        self.automated_improvement_loop.record_metrics(current_metrics)
+
         if self.train_step % 200 == 0:
-            self.self_perf_evaluator.batch_update({
-                "free_energy": fe,
-                "confidence": confidence,
-                "action_success_rate": float(confidence > 0.5),
-                "stability_score": max(0.0, 1.0 - fe),
-                "safety_compliance_rate": 0.95,
-                "throughput_steps_per_sec": 1000.0 / max(step_time, 1.0),
-                "error_rate": max(0.0, min(1.0, fe / 5.0)),
-            })
+            self.self_perf_evaluator.batch_update(current_metrics)
 
             findings = self.self_diagnostic.run_diagnostics(
                 system_state={"step": self.train_step},
-                metrics={
-                    "free_energy": fe,
-                    "confidence": confidence,
-                    "error_rate": max(0.0, min(1.0, fe / 5.0)),
-                    "throughput_steps_per_sec": 1000.0 / max(step_time, 1.0),
-                }
+                metrics=current_metrics
             )
 
             if findings and self.train_step % 500 == 0:
@@ -575,6 +826,153 @@ class SelfEvolvingAGI:
                 })
                 for prop in tier1_proposals[:2]:
                     self.bootstrap_improver.verify_and_apply(prop)
+
+        if self.automated_improvement_loop.should_trigger_improvement(self.train_step):
+            improvement_result = self.automated_improvement_loop.run_full_iteration(
+                step=self.train_step,
+                metrics=current_metrics
+            )
+
+            if improvement_result.get("status") == "completed":
+                self.memory_harness.add_context_memory(
+                    content=f"Automated improvement iteration {improvement_result['iteration_id']}: {improvement_result['outcome']} with score {improvement_result['improvement_score']:.3f}",
+                    category="LEARNING",
+                    source_agent="self_improvement"
+                )
+
+    def _run_enhanced_reasoning(self, fused_feat, confidence):
+        if confidence < 0.8:
+            feat_np = fused_feat.detach().cpu().numpy().flatten() if hasattr(fused_feat, 'detach') else np.array(fused_feat).flatten()
+            
+            concept_id = self.abstraction_engine.add_concept(f"observation_{self.train_step}", feat_np)
+            
+            analogy_result = self.abstraction_engine.find_analogies(concept_id, top_k=3)
+            if analogy_result:
+                self.enhanced_knowledge_graph.add_edge(
+                    from_node=concept_id,
+                    to_node=f"analogy_{analogy_result[0]['concept_id']}",
+                    relation_type=RelationType.SIMILAR_TO,
+                    weight=analogy_result[0]['similarity']
+                )
+
+    def _run_context_awareness(self, fused_feat, action, context):
+        feat_np = fused_feat.detach().cpu().numpy().flatten() if hasattr(fused_feat, 'detach') else np.array(fused_feat).flatten()
+        
+        context_type = ContextType.COGNITIVE
+        
+        if context.get('novelty', 0.0) > 0.7:
+            context_type = ContextType.EXPLORATION
+        elif context.get('free_energy', 0.0) > 0.8:
+            context_type = ContextType.COGNITIVE
+        
+        self.context_awareness.add_context_frame(
+            context_type=context_type,
+            features=feat_np,
+            metadata={
+                "free_energy": context.get('free_energy', 0.0),
+                "confidence": context.get('confidence', 0.0),
+                "novelty": context.get('novelty', 0.0)
+            }
+        )
+        
+        scene_type = self.context_awareness.detect_scene()
+        if scene_type != SceneType.UNKNOWN:
+            context_prediction = self.context_awareness.predict_next_context()
+            if context_prediction:
+                import torch
+                features = torch.tensor(context_prediction.get('features', [0.0] * 16))
+                self.enhanced_knowledge_graph.add_node(
+                    label=f"scene_{scene_type.value}",
+                    entity_type=EntityType.CONCEPT,
+                    features=features
+                )
+
+    def _run_active_learning(self, fused_feat, confidence):
+        if self.train_step % 50 == 0:
+            feat_np = fused_feat.detach().cpu().numpy().flatten() if hasattr(fused_feat, 'detach') else np.array(fused_feat)
+            
+            goal_id = self.learning_planner.create_learning_goal(
+                goal_type=LearningGoalType.KNOWLEDGE_ACQUISITION,
+                description=f"Explore patterns at step {self.train_step}",
+                priority=LearningPriority.HIGH if confidence < 0.5 else LearningPriority.MEDIUM,
+                target_confidence=0.9
+            )
+            
+            plan_id = self.learning_planner.create_learning_plan([goal_id])
+            self.learning_planner.execute_plan(plan_id)
+            
+            fragment_id = self.knowledge_integrator.add_fragment(
+                domain=DomainType.GENERAL,
+                content=f"Feature pattern at step {self.train_step}",
+                features=feat_np,
+                confidence=float(confidence),
+                source="internal_observation"
+            )
+
+    def _run_neuro_symbolic_reasoning(self, fused_feat, confidence):
+        feat_np = fused_feat.detach().cpu().numpy().flatten() if hasattr(fused_feat, 'detach') else np.array(fused_feat).flatten()
+
+        symbol_id = f"observation_{self.train_step}"
+        from agi_agent.deliberative import SymbolType
+        self.neuro_symbolic_reasoner.add_symbol(
+            symbol_id=symbol_id,
+            symbol_type=SymbolType.CONCEPT,
+            features=feat_np
+        )
+
+        if self.train_step % 30 == 0:
+            self.neuro_symbolic_coordinator.synchronize_knowledge()
+
+    def _run_world_model_simulation(self, fused_feat, action, context):
+        if hasattr(fused_feat, 'detach'):
+            feat_tensor = fused_feat.detach().cpu()
+            feat_np = feat_tensor.numpy().flatten()
+        else:
+            feat_np = np.array(fused_feat).flatten()
+            feat_tensor = torch.tensor(feat_np)
+
+        entity_id = f"agent_{self.train_step}"
+        self.world_model_engine.add_entity(
+            entity_id=entity_id,
+            category=EntityCategory.AGENT,
+            features=feat_np
+        )
+
+        multimodal_inputs = {"sensor": feat_tensor}
+        encoded_features = self.world_model_engine.encode_multimodal_input(multimodal_inputs)
+        hierarchy = self.world_model_engine.build_hierarchy(encoded_features)
+
+        action_dict = {"type": str(action), "magnitude": float(context.get('confidence', 0.5))}
+        action_tensor = self.world_model_engine._dict_to_tensor(action_dict)
+        dynamics = self.world_model_engine.predict_dynamics(hierarchy, action_tensor, step_idx=self.train_step)
+
+        if context.get('novelty', 0.0) > 0.6:
+            initial_state = {entity_id: {"activated": True, "confidence": float(context.get('confidence', 0.5))}}
+            actions = [{"entity_id": entity_id}]
+
+            simulation = self.world_model_engine.simulate_scenario(
+                scenario_id=f"exploration_{self.train_step}",
+                initial_state=initial_state,
+                actions=actions,
+                max_steps=5
+            )
+
+            from agi_agent.deliberative import InteractionProtocol
+            self.neuro_symbolic_coordinator.add_message(
+                protocol=InteractionProtocol.SIMULATION_TO_REASONING,
+                sender="world_model",
+                receiver="neuro_symbolic",
+                payload={"simulation_result": simulation.to_dict()},
+                priority=2
+            )
+            self.neuro_symbolic_coordinator.process_messages()
+
+    def _run_coordinated_planning(self, goal_state, current_state):
+        plan_result = self.neuro_symbolic_coordinator.plan_with_world_model(
+            goal=goal_state,
+            current_state=current_state
+        )
+        return plan_result
 
     def _run_quad_level_evolution(self, confidence):
         self.long_term_performance.append(confidence)
@@ -667,7 +1065,8 @@ class SelfEvolvingAGI:
                 "limitation_awareness": self.self_model.self_referential_knowledge.get("limitation_awareness", 0.5),
                 "existence_awareness": self.self_model.self_referential_knowledge.get("existence_awareness", 0.5),
                 "temporal_continuity": self.self_model.self_referential_knowledge.get("temporal_continuity", 0.5)
-            }
+            },
+            "automation_linkage": self.linkage_engine.get_stats()
         }
 
     def _run_autonomous_cycle(self, fused_feat, confidence, fe, novelty, system_used):
@@ -1082,7 +1481,13 @@ class SelfEvolvingAGI:
                 "risk_classifier": self.risk_classifier.get_stats(),
                 "circuit_breaker": self.circuit_breaker.get_state(),
                 "audit_entries": len(self.audit_trail.get_recent_entries(limit=100))
-            }
+            },
+            "meta_programming": self.meta_programming.get_stats(),
+            "meta_learning": self.meta_learning_orchestrator.get_overview(),
+            "meta_decision": self.meta_decision_orchestrator.get_overview(),
+            "meta_parsing": self.meta_parsing.get_overview(),
+            "meta_evolution": self.meta_evolution.get_overview(),
+            "meta_cognition": self.meta_cognitive_orchestrator.get_stats()
         }
 
         dashboard_path = self.visualizer.generate_dashboard(report['performance'])
@@ -1146,3 +1551,9 @@ if __name__ == "__main__":
     print(f"\nSecurity System:")
     print(f"  Hard Boundary: {report['security_system']['hard_boundary']}")
     print(f"  Circuit Breaker: {report['security_system']['circuit_breaker']}")
+    print(f"\nMeta-Modules Overview:")
+    print(f"  Meta-Programming: tasks={report['meta_programming']['total_tasks']}")
+    print(f"  Meta-Learning: tasks={report['meta_learning']['registered_tasks']}")
+    print(f"  Meta-Decision: active={report['meta_decision']['active_decisions']}")
+    print(f"  Meta-Parsing: pipelines={len(report['meta_parsing']['pipelines'])}")
+    print(f"  Meta-Evolution: tasks={report['meta_evolution']['total_tasks']}")

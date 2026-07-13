@@ -11,6 +11,10 @@ from .simulation_engine import SimulationEngine, SimulationResult
 from .decision_optimizer import DecisionOptimizer, Solution
 from .autonomous_thinking_engine import AutonomousThinkingEngine
 from .thinking_orchestrator import ThinkingOrchestrator
+from .advanced_reasoner import AdvancedReasoner
+from .abstract_thinking import AbstractionEngine
+from .neuro_symbolic_reasoner import NeuroSymbolicReasoner, SymbolType, NeuralSymbol, SymbolicExpression, InferenceRule
+from .neuro_symbolic_world_coordinator import NeuroSymbolicWorldCoordinator, InteractionProtocol, CoordinationMessage
 
 __all__ = ["ProblemFormulator", "ProblemDefinition",
            "HypothesisGenerator", "Hypothesis",
@@ -18,4 +22,7 @@ __all__ = ["ProblemFormulator", "ProblemDefinition",
            "CausalReasoner", "CausalChain",
            "SimulationEngine", "SimulationResult",
            "DecisionOptimizer", "Solution",
-           "AutonomousThinkingEngine", "ThinkingOrchestrator"]
+           "AutonomousThinkingEngine", "ThinkingOrchestrator",
+           "AdvancedReasoner", "AbstractionEngine",
+           "NeuroSymbolicReasoner", "SymbolType", "NeuralSymbol", "SymbolicExpression", "InferenceRule",
+           "NeuroSymbolicWorldCoordinator", "InteractionProtocol", "CoordinationMessage"]

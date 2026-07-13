@@ -71,11 +71,20 @@ class AutonomousDecisionEngine:
         self.current_best_option: Optional[DecisionOption] = None
         self._decision_count = 0
 
+        self.decision_temperature = 1.0
+        self.exploration_rate = 0.1
+        self.risk_tolerance = 0.5
+
         self._goal_generation_templates = {
             GoalType.HOMEOSTATIC: self._generate_homeostatic_goals,
             GoalType.EXPLORATORY: self._generate_exploratory_goals,
             GoalType.KNOWLEDGE_SEEKING: self._generate_knowledge_goals,
         }
+
+        self.world_model_bridge = None
+
+    def set_world_model_bridge(self, bridge):
+        self.world_model_bridge = bridge
 
     def generate_goals(self, internal_state: Dict[str, Any],
                        external_state: Dict[str, Any],
@@ -391,6 +400,126 @@ class AutonomousDecisionEngine:
             "resource_estimate": resource_estimate,
             "reason": f"Selected {decision} based on score {best_option.score:.2f}" if best_option else "No valid option"
         }
+
+    def make_decision_with_world_model(self, context: Dict[str, Any], 
+                                       current_features: np.ndarray = None) -> Dict[str, Any]:
+        goal_description = context.get("goal", "unknown")
+        current_state = context.get("current_state", {})
+        available_options = context.get("available_options", [])
+        expected_utility = context.get("expected_utility", 0.5)
+        resource_estimate = context.get("resource_estimate", {})
+        risk_level = context.get("risk_level", "low")
+        goal_state = context.get("goal_state", None)
+
+        if not available_options:
+            return {"decision": "no_action", "reason": "No options available", "confidence": 0.3}
+
+        world_model_support = {}
+        if self.world_model_bridge is not None and current_features is not None:
+            world_model_support = self.world_model_bridge.get_decision_support(
+                current_features=current_features,
+                available_actions=available_options,
+                goal_state=goal_state
+            )
+
+        goal = Goal(
+            goal_id=f"goal_decision_{self._decision_count}",
+            goal_type=GoalType.CUSTOM,
+            description=goal_description,
+            priority=DecisionPriority.HIGH if risk_level == "high" else DecisionPriority.MEDIUM,
+            target_state={}
+        )
+
+        action_names = [opt.get("action", "execute") for opt in available_options]
+        options = self.generate_options(goal, current_state, action_names)
+
+        if world_model_support:
+            options = self._incorporate_world_model_predictions(options, world_model_support)
+
+        if not options:
+            return {"decision": "no_action", "reason": "Failed to generate options", "confidence": 0.2}
+
+        best_option = self.select_best_option(options)
+
+        decision_confidence = 0.5
+        if best_option and best_option.score > 0.4:
+            decision = "execute"
+            decision_confidence = min(1.0, best_option.score + expected_utility * 0.3)
+        else:
+            decision = "reconsider"
+            decision_confidence = 0.3
+
+        if world_model_support:
+            decision_confidence = self._blend_confidences(
+                decision_confidence,
+                world_model_support.confidence_bounds,
+                world_model_support.risk_assessment.get("overall_risk", 0.0)
+            )
+
+        result = {
+            "decision": decision,
+            "option": best_option.name if best_option else "none",
+            "score": best_option.score if best_option else 0.0,
+            "confidence": decision_confidence,
+            "risk_level": risk_level,
+            "resource_estimate": resource_estimate,
+            "reason": f"Selected {decision} based on score {best_option.score:.2f}" if best_option else "No valid option"
+        }
+
+        if world_model_support:
+            result["world_model_support"] = {
+                "recommended_actions": world_model_support.recommended_actions,
+                "risk_assessment": world_model_support.risk_assessment,
+                "causal_graph_summary": {
+                    "nodes": len(world_model_support.causal_graph),
+                    "edges": sum(len(e) for e in world_model_support.causal_graph.values())
+                },
+                "confidence_bounds": world_model_support.confidence_bounds
+            }
+
+        return result
+
+    def _incorporate_world_model_predictions(self, options: List[DecisionOption],
+                                             support_info) -> List[DecisionOption]:
+        for option in options:
+            for rec_action in support_info.recommended_actions:
+                if rec_action.get("action") == option.action_sequence[0]:
+                    world_model_score = rec_action.get("alignment_score", 0.5)
+                    option.score = option.score * 0.6 + world_model_score * 0.4
+                    option.success_probability = option.success_probability * 0.7 + \
+                        rec_action.get("predicted_confidence", 0.5) * 0.3
+                    break
+
+        options.sort(key=lambda o: o.score, reverse=True)
+        return options
+
+    def _blend_confidences(self, base_confidence: float,
+                           confidence_bounds: Tuple[float, float],
+                           risk_level: float) -> float:
+        min_conf, max_conf = confidence_bounds
+        world_model_confidence = (min_conf + max_conf) / 2
+
+        blended = base_confidence * 0.5 + world_model_confidence * 0.5
+        blended = blended * (1.0 - risk_level * 0.3)
+
+        return min(1.0, max(0.0, blended))
+
+    def plan_with_world_model(self, current_features: np.ndarray,
+                              goal_state: Dict[str, Any]) -> List[Dict[str, Any]]:
+        if self.world_model_bridge is None:
+            return []
+
+        plan = self.world_model_bridge.plan_to_goal(
+            current_features=current_features,
+            goal_state=goal_state,
+            max_planning_steps=20
+        )
+
+        for step in plan:
+            if "confidence" not in step:
+                step["confidence"] = 0.5
+
+        return plan
 
     def execute_decision(self, option: DecisionOption) -> Dict[str, Any]:
         if not option:

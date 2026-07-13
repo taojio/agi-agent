@@ -19,6 +19,15 @@ from .capability_assessor import (
     CapabilityAssessor, CapabilityDimension, ProficiencyLevel,
     CapabilityMetric, CapabilityGap,
 )
+from .cognitive_regulator import (
+    CognitiveRegulator, CognitiveMetric, CognitiveState, RegulationMode,
+)
+from .learning_self_regulation import (
+    LearningSelfRegulator, LearningObjective, LearningPhase, LearningStyle,
+)
+from .legacy_layer import (
+    SelfMonitor, SelfReflection, SubgoalGenerator, MetaLearner, MetaCognitionLayer,
+)
 
 __all__ = ["SelfModel", "IdentityRepresentation", "CapabilityProfile", "StateRepresentation", "HistoryRepresentation",
            "CognitiveMonitor", "ThinkingTracer", "ExecutionTracker", "ResourceMonitor",
@@ -31,4 +40,9 @@ __all__ = ["SelfModel", "IdentityRepresentation", "CapabilityProfile", "StateRep
            "ReflectionResult", "ExperienceEntry",
            "CapabilityAssessor", "CapabilityDimension", "ProficiencyLevel",
            "CapabilityMetric", "CapabilityGap",
+           # 元认知调控
+           "CognitiveRegulator", "CognitiveMetric", "CognitiveState", "RegulationMode",
+           "LearningSelfRegulator", "LearningObjective", "LearningPhase", "LearningStyle",
+           # legacy_layer（由 metacognition 模块合并而来，向后兼容）
+           "SelfMonitor", "SelfReflection", "SubgoalGenerator", "MetaLearner", "MetaCognitionLayer",
            ]

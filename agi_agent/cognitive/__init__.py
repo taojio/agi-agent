@@ -13,6 +13,8 @@ from .bio_auditory_snn import CochleaModel, CochlearNucleus, InferiorColliculus,
 from .stereoscopic_snn import StereoscopicSNN
 from .module_synaptic_bus import ModuleSynapticBus, NeuralInterface, ModuleSynapse, Spike, SignalType, GlobalOscillator
 from .module_interfaces import INTERFACE_MAP, create_interface, MemoryNeuralInterface, KnowledgeGraphNeuralInterface, DecisionNeuralInterface, ExecutionNeuralInterface, PerceptionNeuralInterface, SecurityNeuralInterface, SoulNeuralInterface, SkillsNeuralInterface, EvolutionNeuralInterface, SelfImprovementNeuralInterface, MetaCognitionNeuralInterface, HomeostasisNeuralInterface
+from .context_awareness import ContextAwarenessEngine, ContextFrame, SceneType, ContextType
+from .world_model import WorldModelEngine, EntityCategory, AbstractionLevel, ModalityType, WorldEntity, CausalRelation, SocialRule, SimulationResult, MultiModalEncoder, HierarchicalRepresentation, DynamicsPredictor, CausalReasoner, MemorySystem, PlanningInterface
 
 __all__ = ["HierarchicalPredictiveCoding", "CognitiveInferenceLayer", "System1", "System2", "DualSystemCognition", 
            "LIFNeuron", "STDPSynapse", "SpikingLayer", "SpikingNeuralNetwork", "SNNEnhancer",
@@ -27,4 +29,6 @@ __all__ = ["HierarchicalPredictiveCoding", "CognitiveInferenceLayer", "System1",
            "INTERFACE_MAP", "create_interface", "MemoryNeuralInterface", "KnowledgeGraphNeuralInterface", 
            "DecisionNeuralInterface", "ExecutionNeuralInterface", "PerceptionNeuralInterface", "SecurityNeuralInterface",
            "SoulNeuralInterface", "SkillsNeuralInterface", "EvolutionNeuralInterface", "SelfImprovementNeuralInterface",
-           "MetaCognitionNeuralInterface", "HomeostasisNeuralInterface"]
+           "MetaCognitionNeuralInterface", "HomeostasisNeuralInterface",
+           "ContextAwarenessEngine", "ContextFrame", "SceneType", "ContextType",
+           "WorldModelEngine", "EntityCategory", "AbstractionLevel", "ModalityType", "WorldEntity", "CausalRelation", "SocialRule", "SimulationResult", "MultiModalEncoder", "HierarchicalRepresentation", "DynamicsPredictor", "CausalReasoner", "MemorySystem", "PlanningInterface"]

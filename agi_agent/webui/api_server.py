@@ -9,7 +9,7 @@ import json
 import time
 import psutil
 from typing import Dict, List, Any, Optional
-from fastapi import FastAPI, HTTPException, Body, Request
+from fastapi import FastAPI, HTTPException, Body, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, Response
@@ -40,6 +40,42 @@ from agi_agent.security import (
 )
 
 app = FastAPI(title="AGI Agent WebUI API", version="1.0.0")
+
+# ========== 认证依赖 ==========
+
+def require_auth(request: Request):
+    """认证依赖：验证JWT Token并返回当前用户
+    
+    用于所有受保护的API端点。公开端点（健康检查、登录注册等）不需要此依赖。
+    """
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
+    
+    if not token:
+        raise AuthenticationException(
+            SecurityErrorCode.AUTH_REQUIRED,
+            "Authentication required. Please provide a valid Bearer token.",
+        )
+    
+    jwt_auth = get_jwt_auth()
+    user = jwt_auth.get_user_from_token(token)
+    return user
+
+
+def require_permission(permission: Permission):
+    """权限检查依赖工厂
+    
+    用法: dependency=require_permission(Permission.AGENT_CONTROL)
+    """
+    def _check_permission(user=Depends(require_auth)):
+        rbac = get_rbac_manager()
+        if not rbac.has_permission(user, permission):
+            raise AuthorizationException(
+                f"Insufficient permissions. Required: {permission.value}",
+                {"user_role": user.role.value, "required_permission": permission.value},
+            )
+        return user
+    return _check_permission
 
 # ========== 安全中间件配置 ==========
 
@@ -172,7 +208,7 @@ def get_system_metrics():
 
 
 @app.get("/api/agent/info")
-async def get_agent_info():
+async def get_agent_info(current_user=Depends(require_auth)):
     """获取代理基本信息"""
     agent = get_agent()
     return {
@@ -185,7 +221,7 @@ async def get_agent_info():
 
 
 @app.get("/api/agent/metrics")
-async def get_agent_metrics():
+async def get_agent_metrics(current_user=Depends(require_auth)):
     """获取代理最新指标"""
     agent = get_agent()
     if agent.metrics_history:
@@ -194,7 +230,7 @@ async def get_agent_metrics():
 
 
 @app.post("/api/agent/step")
-async def run_agent_step(input_data: Dict[str, Any] = Body(...)):
+async def run_agent_step(input_data: Dict[str, Any] = Body(...), current_user=Depends(require_auth)):
     """执行代理单步"""
     agent = get_agent()
     obs = input_data.get("observation", [0.0] * 16)
@@ -207,7 +243,7 @@ async def run_agent_step(input_data: Dict[str, Any] = Body(...)):
 
 
 @app.post("/api/agent/run")
-async def run_agent(steps: int = Body(embed=True)):
+async def run_agent(steps: int = Body(embed=True), current_user=Depends(require_auth)):
     """运行代理多步"""
     agent = get_agent()
     results = []
@@ -221,7 +257,7 @@ async def run_agent(steps: int = Body(embed=True)):
 
 
 @app.get("/api/memory/stats")
-async def get_memory_stats():
+async def get_memory_stats(current_user=Depends(require_auth)):
     """获取记忆系统统计"""
     agent = get_agent()
     stats = agent.memory_harness.get_all_stats()
@@ -229,7 +265,7 @@ async def get_memory_stats():
 
 
 @app.get("/api/memory/list")
-async def list_memories(tier: str = "L1", limit: int = 20):
+async def list_memories(tier: str = "L1", limit: int = 20, current_user=Depends(require_auth)):
     """列出指定层级的记忆"""
     agent = get_agent()
     tier_map = {
@@ -253,7 +289,8 @@ async def list_memories(tier: str = "L1", limit: int = 20):
 
 @app.post("/api/memory/add")
 async def add_memory(content: str = Body(embed=True), tier: str = Body(embed=True),
-                     category: str = Body(embed=True, default="experience")):
+                     category: str = Body(embed=True, default="experience"),
+                     current_user=Depends(require_auth)):
     """添加记忆"""
     agent = get_agent()
     tier_map = {
@@ -285,7 +322,8 @@ async def add_memory(content: str = Body(embed=True), tier: str = Body(embed=Tru
 
 
 @app.post("/api/memory/search")
-async def search_memories(query: str = Body(embed=True), limit: int = Body(embed=True, default=10)):
+async def search_memories(query: str = Body(embed=True), limit: int = Body(embed=True, default=10),
+                          current_user=Depends(require_auth)):
     """搜索记忆"""
     agent = get_agent()
     results = agent.memory_harness.search_memories(
@@ -300,7 +338,7 @@ async def search_memories(query: str = Body(embed=True), limit: int = Body(embed
 
 
 @app.get("/api/soul/info")
-async def get_soul_info():
+async def get_soul_info(current_user=Depends(require_auth)):
     """获取 SOUL 信息"""
     agent = get_agent()
     soul = agent.soul
@@ -329,7 +367,7 @@ async def get_soul_info():
 
 
 @app.post("/api/soul/update")
-async def update_soul(data: Dict[str, Any] = Body(...)):
+async def update_soul(data: Dict[str, Any] = Body(...), current_user=Depends(require_auth)):
     """更新 SOUL"""
     agent = get_agent()
     soul = agent.soul
@@ -351,7 +389,7 @@ async def update_soul(data: Dict[str, Any] = Body(...)):
 
 
 @app.get("/api/soul/export")
-async def export_soul():
+async def export_soul(current_user=Depends(require_auth)):
     """导出 SOUL 为 Markdown"""
     agent = get_agent()
     md = agent.soul.to_markdown()
@@ -359,7 +397,7 @@ async def export_soul():
 
 
 @app.post("/api/soul/import")
-async def import_soul(markdown: str = Body(embed=True)):
+async def import_soul(markdown: str = Body(embed=True), current_user=Depends(require_auth)):
     """从 Markdown 导入 SOUL"""
     agent = get_agent()
     try:
@@ -371,7 +409,7 @@ async def import_soul(markdown: str = Body(embed=True)):
 
 
 @app.get("/api/tasks/stats")
-async def get_task_stats():
+async def get_task_stats(current_user=Depends(require_auth)):
     """获取任务统计"""
     agent = get_agent()
     return {
@@ -382,7 +420,7 @@ async def get_task_stats():
 
 
 @app.get("/api/tasks/list")
-async def list_tasks(status: str = None):
+async def list_tasks(status: str = None, current_user=Depends(require_auth)):
     """列出任务"""
     agent = get_agent()
     tasks = agent.task_board.get_all_tasks()
@@ -393,7 +431,8 @@ async def list_tasks(status: str = None):
 
 @app.post("/api/tasks/submit")
 async def submit_task(name: str = Body(embed=True), description: str = Body(embed=True, default=""),
-                      priority: str = Body(embed=True, default="medium")):
+                      priority: str = Body(embed=True, default="medium"),
+                      current_user=Depends(require_auth)):
     """提交任务"""
     agent = get_agent()
     priority_map = {
@@ -413,7 +452,7 @@ async def submit_task(name: str = Body(embed=True), description: str = Body(embe
 
 
 @app.post("/api/tasks/dag")
-async def create_dag(tasks: List[Dict[str, Any]] = Body(...)):
+async def create_dag(tasks: List[Dict[str, Any]] = Body(...), current_user=Depends(require_auth)):
     """创建 DAG 任务"""
     agent = get_agent()
     task_ids = []
@@ -436,7 +475,7 @@ async def create_dag(tasks: List[Dict[str, Any]] = Body(...)):
 
 
 @app.get("/api/evolution/stats")
-async def get_evolution_stats():
+async def get_evolution_stats(current_user=Depends(require_auth)):
     """获取进化统计"""
     agent = get_agent()
     return {
@@ -446,7 +485,7 @@ async def get_evolution_stats():
 
 
 @app.get("/api/evolution/proposals")
-async def list_proposals(status: str = None):
+async def list_proposals(status: str = None, current_user=Depends(require_auth)):
     """列出进化提案"""
     agent = get_agent()
     proposals = agent.dual_loop_evolution.list_proposals(status)
@@ -454,7 +493,8 @@ async def list_proposals(status: str = None):
 
 
 @app.post("/api/evolution/run")
-async def run_evolution(outer: bool = Body(embed=True, default=True), inner: bool = Body(embed=True, default=False)):
+async def run_evolution(outer: bool = Body(embed=True, default=True), inner: bool = Body(embed=True, default=False),
+                        current_user=Depends(require_auth)):
     """运行进化"""
     agent = get_agent()
     results = {}
@@ -469,7 +509,7 @@ async def run_evolution(outer: bool = Body(embed=True, default=True), inner: boo
 
 
 @app.post("/api/evolution/generate_skill")
-async def generate_skill(requirement: str = Body(embed=True)):
+async def generate_skill(requirement: str = Body(embed=True), current_user=Depends(require_auth)):
     """生成元技能"""
     agent = get_agent()
     skill = agent.metaskill_generator.generate_skill(requirement)
@@ -483,7 +523,7 @@ async def generate_skill(requirement: str = Body(embed=True)):
 
 
 @app.get("/api/self_improvement/overview")
-async def get_self_improvement_overview():
+async def get_self_improvement_overview(current_user=Depends(require_auth)):
     """获取自我改进概览"""
     return {
         "performance": {
@@ -519,7 +559,7 @@ async def get_self_improvement_overview():
 
 
 @app.post("/api/self_improvement/diagnose")
-async def run_diagnostic():
+async def run_diagnostic(current_user=Depends(require_auth)):
     """运行自我诊断"""
     return {
         "success": True,
@@ -530,7 +570,7 @@ async def run_diagnostic():
 
 
 @app.post("/api/self_improvement/proposals")
-async def generate_proposals():
+async def generate_proposals(current_user=Depends(require_auth)):
     """生成改进提案"""
     return {
         "success": True,
@@ -545,7 +585,7 @@ async def generate_proposals():
 
 
 @app.get("/api/skills/list")
-async def list_skills():
+async def list_skills(current_user=Depends(require_auth)):
     """获取技能列表"""
     import glob
     skills_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'skills')
@@ -583,7 +623,7 @@ async def list_skills():
 
 
 @app.get("/api/knowledge/graph")
-async def get_knowledge_graph():
+async def get_knowledge_graph(current_user=Depends(require_auth)):
     """获取知识图谱"""
     agent = get_agent()
     try:
@@ -626,7 +666,7 @@ async def health_check():
 
 
 @app.get("/api/synaptic/activity")
-async def get_synaptic_activity():
+async def get_synaptic_activity(current_user=Depends(require_auth)):
     """获取突触总线活动状态"""
     agent = get_agent()
     agent._update_synaptic_bus()
@@ -634,14 +674,14 @@ async def get_synaptic_activity():
 
 
 @app.get("/api/synaptic/connections")
-async def get_synaptic_connections():
+async def get_synaptic_connections(current_user=Depends(require_auth)):
     """获取突触连接拓扑"""
     agent = get_agent()
     return agent.get_connection_topology()
 
 
 @app.get("/api/synaptic/oscillator")
-async def get_oscillator_status():
+async def get_oscillator_status(current_user=Depends(require_auth)):
     """获取全局振荡器状态"""
     agent = get_agent()
     if hasattr(agent, 'synaptic_bus') and agent.synaptic_bus:
@@ -650,7 +690,7 @@ async def get_oscillator_status():
 
 
 @app.get("/api/synaptic/signal_flow")
-async def get_signal_flow():
+async def get_signal_flow(current_user=Depends(require_auth)):
     """获取信号流向"""
     agent = get_agent()
     if hasattr(agent, 'synaptic_bus') and agent.synaptic_bus:
@@ -659,7 +699,8 @@ async def get_signal_flow():
 
 
 @app.post("/api/synaptic/propagate")
-async def propagate_signal(module_id: str = Body(..., embed=True), signal_type: str = Body(..., embed=True), payload: Dict = Body({}, embed=True)):
+async def propagate_signal(module_id: str = Body(..., embed=True), signal_type: str = Body(..., embed=True), payload: Dict = Body({}, embed=True),
+                           current_user=Depends(require_auth)):
     """发送信号到指定模块"""
     agent = get_agent()
     if hasattr(agent, 'synaptic_bus') and agent.synaptic_bus:
@@ -671,7 +712,7 @@ async def propagate_signal(module_id: str = Body(..., embed=True), signal_type: 
 
 
 @app.get("/api/system/overview")
-async def get_system_overview():
+async def get_system_overview(current_user=Depends(require_auth)):
     """获取系统概览信息"""
     agent = get_agent()
     return {
@@ -700,33 +741,60 @@ async def get_system_overview():
     }
 
 
+@app.get("/api/automation/linkage")
+async def get_linkage_stats(current_user=Depends(require_auth)):
+    """获取自动化联动引擎状态"""
+    agent = get_agent()
+    return agent.linkage_engine.get_stats()
+
+
+@app.get("/api/automation/linkage/history")
+async def get_linkage_history(limit: int = 20, current_user=Depends(require_auth)):
+    """获取自动化联动执行历史"""
+    agent = get_agent()
+    return {"history": agent.linkage_engine.get_recent_history(limit)}
+
+
+@app.post("/api/automation/linkage/toggle")
+async def toggle_linkage_rule(data: Dict[str, Any] = Body(...), current_user=Depends(require_auth)):
+    """启用/禁用联动规则"""
+    agent = get_agent()
+    rule_id = data.get("rule_id", "")
+    enabled = data.get("enabled", True)
+    if enabled:
+        agent.linkage_engine.enable_rule(rule_id)
+    else:
+        agent.linkage_engine.disable_rule(rule_id)
+    return {"rule_id": rule_id, "enabled": enabled}
+
+
 @app.get("/api/sessions/list")
-async def list_sessions():
+async def list_sessions(current_user=Depends(require_auth)):
     """获取会话列表"""
     return {"sessions": []}
 
 
 @app.post("/api/sessions/save")
-async def save_session(data: Dict[str, Any] = Body(...)):
+async def save_session(data: Dict[str, Any] = Body(...), current_user=Depends(require_auth)):
     """保存会话"""
     session_id = data.get("session_id") or f"session_{int(time.time())}"
     return {"status": "success", "session_id": session_id}
 
 
 @app.post("/api/sessions/export")
-async def export_session(data: Dict[str, Any] = Body(...)):
+async def export_session(data: Dict[str, Any] = Body(...), current_user=Depends(require_auth)):
     """导出会话"""
     return {"status": "success", "data": {}}
 
 
 @app.post("/api/sessions/save_all")
-async def save_all_sessions():
+async def save_all_sessions(current_user=Depends(require_auth)):
     """保存所有会话"""
     return {"status": "success"}
 
 
 @app.post("/api/sessions/export_all")
-async def export_all_sessions():
+async def export_all_sessions(current_user=Depends(require_auth)):
     """导出所有会话"""
     return {"status": "success", "data": {}}
 
@@ -1030,6 +1098,7 @@ async def get_audit_log(
     severity: str = None,
     limit: int = 100,
     offset: int = 0,
+    current_user=Depends(require_auth),
 ):
     """查询审计日志"""
     audit = get_audit_logger()
@@ -1046,14 +1115,14 @@ async def get_audit_log(
 
 
 @app.get("/api/security/audit/stats")
-async def get_audit_stats():
+async def get_audit_stats(current_user=Depends(require_auth)):
     """获取审计统计信息"""
     audit = get_audit_logger()
     return audit.get_stats()
 
 
 @app.get("/api/security/overview")
-async def get_security_overview():
+async def get_security_overview(current_user=Depends(require_auth)):
     """获取安全系统概览"""
     agent = get_agent()
     audit = get_audit_logger()
@@ -1100,7 +1169,7 @@ async def get_security_overview():
 
 
 @app.get("/api/agents/list")
-async def list_agents():
+async def list_agents(current_user=Depends(require_auth)):
     """获取Agent列表"""
     agent = get_agent()
     return {
@@ -1113,20 +1182,20 @@ async def list_agents():
 
 
 @app.post("/api/config/save")
-async def save_config(data: Dict[str, Any] = Body(...)):
+async def save_config(data: Dict[str, Any] = Body(...), current_user=Depends(require_auth)):
     """保存配置（模型及服务商配置已移除）"""
     return {"status": "success"}
 
 
 @app.post("/api/chat/send")
-async def send_chat_message(data: Dict[str, Any] = Body(...)):
+async def send_chat_message(data: Dict[str, Any] = Body(...), current_user=Depends(require_auth)):
     """发送聊天消息"""
     content = data.get("content", "")
     return {"response": f"收到消息: {content}\n\n（当前为模拟回复，需要连接真实LLM服务）"}
 
 
 @app.get("/api/agent/status")
-async def get_agent_status():
+async def get_agent_status(current_user=Depends(require_auth)):
     """获取Agent状态"""
     agent = get_agent()
     return {"status": "running" if agent.running else "stopped"}

@@ -134,7 +134,7 @@ class SelfReflection:
                     if r["id"] != rule_id
                 ] + [{
                     **next(r for r in self.strategy_rules if r["id"] == rule_id),
-                    "success_count": next(r["success_count"] for r in self.strategy_rules if r["id"] == rule_id) + 1
+                    "success_count": next(r for r in self.strategy_rules if r["id"] == rule_id) + 1
                 }]
             total = self.rule_usage_count[rule_id]
             rule = next(r for r in self.strategy_rules if r["id"] == rule_id)

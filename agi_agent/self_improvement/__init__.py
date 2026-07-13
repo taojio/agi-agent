@@ -14,6 +14,7 @@ from .tiered_modification import (
 from .symbolic_self_model import SymbolicSelfModel
 from .symbolic_verifier import SymbolicFormalVerifier
 from .bootstrapped_improver import BootstrappedSelfImprover, ImprovementStage
+from .automated_improvement_loop import AutomatedSelfImprovementLoop, IterationPhase, ImprovementOutcome, IterationRecord, PerformanceThreshold
 from .performance_baseline import (
     PerformanceBaseline, BaselineType, TrendDirection,
     PerformanceMetric, MetricSample,
@@ -34,6 +35,9 @@ __all__ = [
     "ParamType", "RuleSpec", "ModuleInterfaceSpec", "TieredModificationRequest",
     "SymbolicSelfModel", "SymbolicFormalVerifier",
     "BootstrappedSelfImprover", "ImprovementStage",
+    # 自动化改进循环
+    "AutomatedSelfImprovementLoop", "IterationPhase", "ImprovementOutcome",
+    "IterationRecord", "PerformanceThreshold",
     # v3.0 新增
     "PerformanceBaseline", "BaselineType", "TrendDirection",
     "PerformanceMetric", "MetricSample",

@@ -17,6 +17,7 @@ from .decision_engine import (
 )
 from .action_planner import ActionPlanner
 from .execution_monitor import ExecutionMonitor
+from .world_model_bridge import WorldModelDecisionBridge, BridgeMode, PredictionResult, SimulationScenario, DecisionSupportInfo
 from .decision_strategies import (
     DecisionStrategy,
     StrategyType,
@@ -53,6 +54,12 @@ __all__ = [
     "GoalType",
     "ActionPlanner",
     "ExecutionMonitor",
+    # 世界模型桥接
+    "WorldModelDecisionBridge",
+    "BridgeMode",
+    "PredictionResult",
+    "SimulationScenario",
+    "DecisionSupportInfo",
     # 决策策略
     "DecisionStrategy",
     "StrategyType",
