@@ -26,11 +26,12 @@ class SimulationResult:
 
 
 class SimulationEngine:
-    def __init__(self, feature_dim=16, max_simulation_steps=10):
+    def __init__(self, feature_dim=16, max_simulation_steps=10, rule_registry=None):
         self.feature_dim = feature_dim
         self.max_simulation_steps = max_simulation_steps
         self.simulation_history = deque(maxlen=200)
         self.historical_data = {}
+        self._rule_registry = rule_registry
 
     def _simulate_step(self, current_state, action, transition_model=None):
         state = np.array(current_state).flatten()

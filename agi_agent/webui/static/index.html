@@ -233,6 +233,7 @@
                                 <button class="input-btn" id="voiceBtn" title="语音输入">🎤</button>
                                 <input type="text" class="chat-input" id="chatInput" placeholder="输入消息... 按 / 查看快捷命令">
                                 <button class="input-btn" id="attachBtn" title="附件">📎</button>
+                                <input type="file" id="fileInput" class="file-input" multiple style="display: none;">
                                 <button class="input-btn send-btn" id="sendBtn">发送</button>
                             </div>
                         </div>
@@ -638,6 +639,22 @@
                 <span class="mobile-nav-icon">⚙️</span>
                 <span class="mobile-nav-label">配置</span>
             </button>
+        </div>
+
+        <div class="modal-overlay" id="modalOverlay" style="display: none;">
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <span class="modal-title" id="modalTitle">提示</span>
+                    <button class="modal-close" id="modalClose" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="modal-input" id="modalInput" placeholder="" autocomplete="off">
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn modal-btn-cancel" id="modalCancel" onclick="closeModal()">取消</button>
+                    <button class="modal-btn modal-btn-confirm" id="modalConfirm">确认</button>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -584,9 +584,9 @@ async def generate_proposals(current_user=Depends(require_auth)):
     }
 
 
-@app.get("/api/skills/list")
-async def list_skills(current_user=Depends(require_auth)):
-    """获取技能列表"""
+@app.get("/api/skills/installed")
+async def list_installed_skills(current_user=Depends(require_auth)):
+    """获取已安装技能列表"""
     import glob
     skills_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'skills')
     skill_dirs = [d for d in os.listdir(skills_dir) if os.path.isdir(os.path.join(skills_dir, d)) and not d.startswith('.')]

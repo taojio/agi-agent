@@ -141,6 +141,8 @@ class DataPreprocessor:
         if len(text) <= self.chunk_size:
             if len(text) >= self.min_chunk_size:
                 chunks.append(text)
+            elif len(text) >= 5 and re.match(r'^[A-Za-z]{2,}[#@]?\d+$', text.strip()):
+                chunks.append(text)
             return chunks
 
         start = 0
@@ -187,6 +189,11 @@ class DataPreprocessor:
         non_asian_chars = chinese_chars + japanese_chars + korean_chars
         is_asian = non_asian_chars > alpha_chars
 
+        if re.match(r'^[A-Za-z]{2,}[#@]\d+$', text.strip()):
+            return 0.35
+        if re.match(r'^[A-Za-z]{2,}\d+$', text.strip()):
+            return 0.3
+        
         if total_chars < 10:
             if is_asian and non_asian_chars >= 3:
                 return 0.3
@@ -232,20 +239,27 @@ class DataPreprocessor:
 
         if digit_chars > 0 and total_chars > 0:
             digit_ratio = digit_chars / total_chars
-            if digit_ratio > 0.5:
-                score *= 0.5
+            if digit_ratio > 0.8:
+                score *= 0.7
+            elif digit_ratio > 0.6:
+                score *= 0.85
 
         if whitespace_chars > 0 and total_chars > 0:
             whitespace_ratio = whitespace_chars / total_chars
             if whitespace_ratio > 0.5:
                 score *= 0.5
 
-        if total_chars < 30:
-            score *= 0.7
+        if total_chars < 20:
+            score *= 0.8
         elif total_chars < 50:
-            score *= 0.85
+            score *= 0.9
         elif total_chars < 100:
             score *= 0.95
+
+        if alpha_chars > 0 or non_asian_chars > 0:
+            text_ratio = (alpha_chars + non_asian_chars) / total_chars
+            if text_ratio > 0.1:
+                score = max(score, 0.25)
 
         return max(0.0, min(1.0, score))
 

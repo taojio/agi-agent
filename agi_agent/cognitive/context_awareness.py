@@ -14,6 +14,7 @@ class ContextType(Enum):
     COGNITIVE = "cognitive"
     TASK = "task"
     ENVIRONMENTAL = "environmental"
+    EXPLORATION = "exploration"
 
 
 class SceneType(Enum):

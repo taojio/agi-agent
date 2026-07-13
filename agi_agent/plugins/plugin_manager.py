@@ -60,7 +60,11 @@ class PluginManager:
         """启动时扫描所有可用插件（仅注册元信息，不加载）。"""
         available = self._scan_plugin_files()
         for name, filepath in available.items():
-            self._lazy_load_queue[name] = filepath
+            plugin_info = self._inspect_plugin_metadata(filepath)
+            if plugin_info and 'name' in plugin_info:
+                self._lazy_load_queue[plugin_info['name']] = filepath
+            else:
+                self._lazy_load_queue[name] = filepath
 
     def _scan_plugin_files(self) -> Dict[str, str]:
         """扫描插件目录，返回插件名到文件路径的映射。"""
@@ -179,20 +183,28 @@ class PluginManager:
         available = []
         files = self._scan_plugin_files()
 
-        for name, filepath in files.items():
-            if name in self._plugins:
-                plugin = self._plugins[name]
+        for filename, filepath in files.items():
+            plugin_info = self._inspect_plugin_metadata(filepath)
+            plugin_name = plugin_info['name'] if plugin_info else filename
+            
+            if plugin_name in self._plugins:
+                plugin = self._plugins[plugin_name]
+                info = plugin.get_info()
+                info["filepath"] = filepath
+                info["loaded"] = True
+                available.append(info)
+            elif filename in self._plugins:
+                plugin = self._plugins[filename]
                 info = plugin.get_info()
                 info["filepath"] = filepath
                 info["loaded"] = True
                 available.append(info)
             else:
-                info = self._inspect_plugin_metadata(filepath)
-                if info:
-                    info["filepath"] = filepath
-                    info["loaded"] = False
-                    info["status"] = "unloaded"
-                    available.append(info)
+                info = plugin_info if plugin_info else {}
+                info["filepath"] = filepath
+                info["loaded"] = False
+                info["status"] = "unloaded"
+                available.append(info)
 
         return available
 
@@ -266,12 +278,19 @@ class PluginManager:
             if filepath is None:
                 if plugin_name is None:
                     return {"success": False, "error": "必须提供filepath或plugin_name"}
-                filepath = os.path.join(self.plugins_dir, f"{plugin_name}.py")
+                
+                if plugin_name in self._lazy_load_queue:
+                    filepath = self._lazy_load_queue[plugin_name]
+                else:
+                    filepath = os.path.join(self.plugins_dir, f"{plugin_name}.py")
+                
                 if not os.path.exists(filepath):
                     return {"success": False, "error": f"插件文件不存在: {filepath}"}
 
             module_name = os.path.splitext(os.path.basename(filepath))[0]
 
+            if plugin_name and plugin_name in self._plugins:
+                return {"success": True, "info": self._plugins[plugin_name].get_info(), "already_loaded": True}
             if module_name in self._plugins:
                 return {"success": True, "info": self._plugins[module_name].get_info(), "already_loaded": True}
 

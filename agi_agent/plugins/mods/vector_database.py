@@ -374,7 +374,10 @@ class LocalFAISSStore(VectorStoreBase):
         import faiss
         with self._lock:
             if self._index is not None:
+                os.makedirs(os.path.dirname(path), exist_ok=True)
                 faiss.write_index(self._index, f"{path}.index")
+            else:
+                os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(f"{path}.meta.json", "w", encoding="utf-8") as f:
                 json.dump({
                     "dim": self.dim,

@@ -35,11 +35,12 @@ class Solution:
 
 
 class DecisionOptimizer:
-    def __init__(self, feature_dim=16):
+    def __init__(self, feature_dim=16, rule_registry=None):
         self.feature_dim = feature_dim
         self.solutions = {}
         self.optimization_history = deque(maxlen=200)
         self.current_criteria = OptimizationCriteria.BALANCED
+        self._rule_registry = rule_registry
 
     def _calculate_score(self, hypothesis, simulation_result, criteria):
         weights = {

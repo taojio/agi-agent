@@ -144,8 +144,89 @@ const dom = {
     moduleActivityList: document.getElementById('moduleActivityList'),
     oscillatorDisplay: document.getElementById('oscillatorDisplay'),
     synapticGraph: document.getElementById('synapticGraph'),
-    signalFlowChart: document.getElementById('signalFlowChart')
+    signalFlowChart: document.getElementById('signalFlowChart'),
+    
+    modalOverlay: document.getElementById('modalOverlay'),
+    modalTitle: document.getElementById('modalTitle'),
+    modalInput: document.getElementById('modalInput'),
+    modalConfirm: document.getElementById('modalConfirm'),
+    modalCancel: document.getElementById('modalCancel'),
+    
+    attachBtn: document.getElementById('attachBtn'),
+    fileInput: document.getElementById('fileInput'),
+    configPluginList: document.getElementById('configPluginList')
 };
+
+let modalPromptCallback = null;
+
+function showModalPrompt(title, placeholder, defaultValue = '') {
+    return new Promise((resolve) => {
+        modalPromptCallback = resolve;
+        dom.modalTitle.textContent = title;
+        dom.modalInput.placeholder = placeholder;
+        dom.modalInput.value = defaultValue;
+        dom.modalOverlay.style.display = 'flex';
+        setTimeout(() => dom.modalInput.focus(), 50);
+    });
+}
+
+function closeModal(value = null) {
+    dom.modalOverlay.style.display = 'none';
+    dom.modalInput.value = '';
+    if (modalPromptCallback) {
+        modalPromptCallback(value);
+        modalPromptCallback = null;
+    }
+}
+
+dom.modalConfirm.addEventListener('click', () => {
+    closeModal(dom.modalInput.value.trim() || null);
+});
+
+dom.modalInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        closeModal(dom.modalInput.value.trim() || null);
+    } else if (e.key === 'Escape') {
+        closeModal(null);
+    }
+});
+
+dom.modalOverlay.addEventListener('click', (e) => {
+    if (e.target === dom.modalOverlay) {
+        closeModal(null);
+    }
+});
+
+async function handleFileUpload(e) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    addMessage('system', `正在上传 ${files.length} 个文件...`);
+    
+    for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const response = await fetch(`${API_BASE}/api/file-ingestion/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                addMessage('assistant', `文件 "${data.filename}" 上传成功，ID: ${data.record_id}`);
+            } else {
+                addMessage('system', `文件 "${file.name}" 上传失败: ${data.detail || '未知错误'}`);
+            }
+        } catch (error) {
+            addMessage('system', `文件 "${file.name}" 上传失败: ${error.message}`);
+        }
+    }
+    
+    e.target.value = '';
+}
 
 let currentSessionId = null;
 let sessions = [];
@@ -157,6 +238,8 @@ function initEventListeners() {
         if (e.key === 'Enter') sendMessage();
     });
     dom.voiceBtn.addEventListener('click', toggleVoiceInput);
+    dom.attachBtn.addEventListener('click', () => dom.fileInput.click());
+    dom.fileInput.addEventListener('change', handleFileUpload);
     dom.clearChatBtn.addEventListener('click', clearChat);
     dom.newSessionBtn.addEventListener('click', createNewSession);
     dom.exportSessionBtn.addEventListener('click', exportSession);
@@ -296,6 +379,61 @@ function switchConfigTab(tabName) {
     dom.configSections.forEach(section => {
         section.style.display = section.id === `config-${tabName}` ? 'block' : 'none';
     });
+    
+    if (tabName === 'plugins') {
+        loadPlugins();
+    }
+}
+
+async function loadPlugins() {
+    try {
+        const response = await fetch(`${API_BASE}/api/plugins/available`);
+        const data = await response.json();
+        renderPlugins(data.plugins || []);
+    } catch (error) {
+        console.error('Failed to load plugins:', error);
+        dom.configPluginList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 40px;">加载失败</div>';
+    }
+}
+
+function renderPlugins(plugins) {
+    if (plugins.length === 0) {
+        dom.configPluginList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 40px;">暂无插件</div>';
+        return;
+    }
+    
+    dom.configPluginList.innerHTML = plugins.map(plugin => `
+        <div class="plugin-item">
+            <div>
+                <h4>${plugin.name || '未命名插件'}</h4>
+                <p>${plugin.description || '无描述'}</p>
+                <span style="font-size: 11px; color: var(--text-muted);">版本: ${plugin.version || '1.0'} | 类型: ${plugin.type || 'processor'}</span>
+            </div>
+            <div class="plugin-toggle ${plugin.status === 'active' ? 'on' : ''}" data-plugin="${plugin.name}" onclick="togglePlugin('${plugin.name}')"></div>
+        </div>
+    `).join('');
+}
+
+async function togglePlugin(pluginName) {
+    const toggle = document.querySelector(`.plugin-toggle[data-plugin="${pluginName}"]`);
+    const isActive = toggle.classList.contains('on');
+    
+    try {
+        const endpoint = isActive ? `/api/plugins/${pluginName}/deactivate` : `/api/plugins/${pluginName}/activate`;
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            toggle.classList.toggle('on');
+            loadPlugins();
+        }
+    } catch (error) {
+        console.error('Plugin toggle failed:', error);
+    }
 }
 
 function switchMemoryTier(tier) {
@@ -1017,8 +1155,8 @@ function searchMemories() {
     .catch(error => console.error('Search failed:', error));
 }
 
-function addMemory() {
-    const content = prompt('输入记忆内容:');
+async function addMemory() {
+    const content = await showModalPrompt('添加记忆', '输入记忆内容:');
     if (!content) return;
     
     fetch(`${API_BASE}/api/memory/add`, {
@@ -1209,11 +1347,11 @@ function renderTaskColumn(tasks) {
     `).join('');
 }
 
-function submitTask() {
-    const name = prompt('输入任务名称:');
+async function submitTask() {
+    const name = await showModalPrompt('提交任务', '输入任务名称:');
     if (!name) return;
-    const description = prompt('输入任务描述:');
-    const priority = prompt('输入优先级 (low/medium/high/critical):', 'medium');
+    const description = await showModalPrompt('提交任务', '输入任务描述:');
+    const priority = await showModalPrompt('提交任务', '输入优先级 (low/medium/high/critical):', 'medium');
     
     fetch(`${API_BASE}/api/tasks/submit`, {
         method: 'POST',
@@ -1300,8 +1438,8 @@ function runEvolution() {
     .catch(error => console.error('Run evolution failed:', error));
 }
 
-function generateSkill() {
-    const requirement = prompt('输入技能需求:');
+async function generateSkill() {
+    const requirement = await showModalPrompt('生成技能', '输入技能需求:');
     if (!requirement) return;
     
     fetch(`${API_BASE}/api/evolution/generate_skill`, {
@@ -1533,7 +1671,7 @@ function generateProposals() {
 
 async function loadSkills() {
     try {
-        const response = await fetch(`${API_BASE}/api/skills/list`);
+        const response = await fetch(`${API_BASE}/api/skills/installed`);
         const data = await response.json();
         
         renderSkills(data.skills || []);
@@ -1554,7 +1692,7 @@ function renderSkills(skills) {
             <h4>${skill.name || '未命名技能'}</h4>
             <p>${skill.description || '无描述'}</p>
             <div style="display: flex; gap: 8px; margin-top: 8px;">
-                <span style="padding: 4px 8px; background: var(--bg-secondary); border-radius: 4px; font-size: 11px;">状态: ${skill.status || 'active'}</span>
+                <span style="padding: 4px 8px; background: var(--bg-secondary); border-radius: 4px; font-size: 11px;">状态: ${skill.has_skill_md ? '已安装' : '未安装'}</span>
                 <span style="padding: 4px 8px; background: var(--bg-secondary); border-radius: 4px; font-size: 11px;">版本: ${skill.version || '1.0'}</span>
             </div>
         </div>

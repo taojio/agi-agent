@@ -7,6 +7,28 @@ import sys
 import os
 import multiprocessing
 
+try:
+    import torch
+except ImportError:
+    fallback_paths = [
+        "D:\\Program Files\\Python311\\Lib\\site-packages",
+        "C:\\Users\\Administrator\\python-sdk\\python3.10.16\\Lib\\site-packages",
+        "D:\\torch_install",
+    ]
+    torch_found = False
+    for path in fallback_paths:
+        if os.path.exists(path):
+            sys.path.insert(0, path)
+            try:
+                import torch
+                torch_found = True
+                print(f"[INFO] 使用备用路径加载 torch: {path}")
+                break
+            except ImportError:
+                sys.path.remove(path)
+    if not torch_found:
+        raise ImportError("无法找到 torch 模块，请确保已安装 PyTorch")
+
 
 def main():
     multiprocessing.freeze_support()

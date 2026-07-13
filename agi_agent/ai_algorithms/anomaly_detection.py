@@ -540,13 +540,21 @@ class AnomalyDetector:
         self._detectors: Dict[str, AIAlgorithmComponent] = {}
 
     def detect(self, data: np.ndarray, method: str = "auto",
+<<<<<<< HEAD
                 threshold: Optional[float] = None, **kwargs) -> AnomalyReport:
+=======
+                threshold: float = 0.6, **kwargs) -> AnomalyReport:
+>>>>>>> 207ffbffe36779557c4a4cca69837167f09cfdbc
         """检测异常
 
         Args:
             data: 输入数据 (n_samples, n_features) 或 (n_samples,)
             method: 检测方法
+<<<<<<< HEAD
             threshold: 异常阈值（None 表示使用算法默认值）
+=======
+            threshold: 异常阈值
+>>>>>>> 207ffbffe36779557c4a4cca69837167f09cfdbc
             **kwargs: 算法参数
 
         Returns:
@@ -559,6 +567,7 @@ class AnomalyDetector:
         if method == "auto":
             method = self._select_method(data, **kwargs)
 
+<<<<<<< HEAD
         # 方法相关的默认阈值
         if threshold is None:
             threshold = 3.0 if method == "zscore" else 0.6
@@ -567,6 +576,12 @@ class AnomalyDetector:
             return self._ensemble_detect(data, threshold)
 
         detector = self._get_or_create_detector(method, threshold=threshold, **kwargs)
+=======
+        if method == "ensemble":
+            return self._ensemble_detect(data, threshold)
+
+        detector = self._get_or_create_detector(method, **kwargs)
+>>>>>>> 207ffbffe36779557c4a4cca69837167f09cfdbc
         detector.fit(data)
         results = self._call_detect(detector, data, threshold)
 

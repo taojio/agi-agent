@@ -1,16 +1,7 @@
 {
-  "input_dim": 512,
-  "max_steps": 0,
-  "log_interval": 99999,
-  "save_interval": 1000,
-  "free_energy_threshold": 0.51,
-  "novelty_threshold": 0.5,
-<<<<<<< HEAD
-  "auto_start": true,
-=======
-  "auto_start": false,
->>>>>>> bf5a445d60c0886284e0b033350e688c8852e22c
-  "sensor_enabled": true,
-  "voice_input": false,
-  "theme": "dark"
+  "port": 8000,
+  "max_sessions": 10,
+  "temperature": 0.7,
+  "agent_name": "OpenClaw Agent",
+  "system_prompt": "你是一个强大的AI助手..."
 }

@@ -43,14 +43,14 @@ class ThinkingResult:
 
 
 class AutonomousThinkingEngine:
-    def __init__(self, feature_dim=16):
+    def __init__(self, feature_dim=16, rule_registry=None):
         self.feature_dim = feature_dim
         self.problem_formulator = ProblemFormulator(feature_dim=feature_dim)
         self.hypothesis_generator = HypothesisGenerator(feature_dim=feature_dim)
-        self.logical_deductor = LogicalDeductor(feature_dim=feature_dim)
-        self.causal_reasoner = CausalReasoner(feature_dim=feature_dim)
-        self.simulation_engine = SimulationEngine(feature_dim=feature_dim)
-        self.decision_optimizer = DecisionOptimizer(feature_dim=feature_dim)
+        self.logical_deductor = LogicalDeductor(feature_dim=feature_dim, rule_registry=rule_registry)
+        self.causal_reasoner = CausalReasoner(feature_dim=feature_dim, rule_registry=rule_registry)
+        self.simulation_engine = SimulationEngine(feature_dim=feature_dim, rule_registry=rule_registry)
+        self.decision_optimizer = DecisionOptimizer(feature_dim=feature_dim, rule_registry=rule_registry)   
         
         self.thinking_history = deque(maxlen=200)
         self.current_phase = ThinkingPhase.FORMULATION
