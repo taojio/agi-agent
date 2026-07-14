@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw Control UI</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦾</text></svg>" type="image/svg+xml">
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <span class="logo-icon">🦾</span>
+                    <span class="logo-text">OpenClaw</span>
+                </div>
+                <div class="gateway-status" id="gatewayStatus">
+                    <span class="status-indicator offline"></span>
+                    <span>Gateway 离线</span>
+                </div>
+            </div>
+            <div class="header-center">
+                <button class="command-palette-btn" id="commandPaletteBtn" title="命令面板 (Ctrl+K)">
+                    <span class="cmd-icon">⌘</span>
+                    <span class="cmd-text">按 Ctrl+K 打开命令面板</span>
+                </button>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" id="refreshBtn" title="刷新">🔄</button>
+                <button class="header-btn" id="runStepBtn" title="执行单步">▶️</button>
+                <button class="header-btn" id="fastModeBtn" title="极速模式" disabled>⚡</button>
+                <div class="user-info">
+                    <span class="user-avatar">👤</span>
+                </div>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <button class="nav-item active" data-view="overview">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">概览</span>
+            </button>
+            <button class="nav-item" data-view="chat">
+                <span class="nav-icon">💬</span>
+                <span class="nav-label">聊天</span>
+                <span class="nav-badge" id="unreadBadge">0</span>
+            </button>
+            <button class="nav-item" data-view="memory">
+                <span class="nav-icon">🧠</span>
+                <span class="nav-label">记忆</span>
+            </button>
+            <button class="nav-item" data-view="soul">
+                <span class="nav-icon">✨</span>
+                <span class="nav-label">SOUL</span>
+            </button>
+            <button class="nav-item" data-view="tasks">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">任务</span>
+            </button>
+            <button class="nav-item" data-view="evolution">
+                <span class="nav-icon">🧬</span>
+                <span class="nav-label">进化</span>
+            </button>
+            <button class="nav-item" data-view="security">
+                <span class="nav-icon">🛡️</span>
+                <span class="nav-label">安全</span>
+            </button>
+            <button class="nav-item" data-view="selfimprovement">
+                <span class="nav-icon">🔧</span>
+                <span class="nav-label">自我改进</span>
+            </button>
+            <button class="nav-item" data-view="skills">
+                <span class="nav-icon">🎯</span>
+                <span class="nav-label">技能</span>
+            </button>
+            <button class="nav-item" data-view="knowledge">
+                <span class="nav-icon">🔗</span>
+                <span class="nav-label">知识图谱</span>
+            </button>
+            <button class="nav-item" data-view="synaptic">
+                <span class="nav-icon">⚡</span>
+                <span class="nav-label">突触总线</span>
+            </button>
+            <button class="nav-item" data-view="config">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">配置</span>
+            </button>
+        </nav>
+
+        <main class="main-content">
+            <div class="view" id="view-overview">
+                <div class="overview-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🚀</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statActiveAgents">0</div>
+                            <div class="stat-label">活跃 Agents</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🧠</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statMemoryTiers">0</div>
+                            <div class="stat-label">记忆层级</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statActiveSessions">0</div>
+                            <div class="stat-label">活跃会话</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🧬</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statEvolution">0</div>
+                            <div class="stat-label">进化次数</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statFreeEnergy">0.00</div>
+                            <div class="stat-label">自由能</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statConfidence">0%</div>
+                            <div class="stat-label">置信度</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🛡️</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statSafety">安全</div>
+                            <div class="stat-label">安全状态</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🔗</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statKnowledge">0</div>
+                            <div class="stat-label">知识节点</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="overview-section">
+                    <h3 class="section-title">系统状态</h3>
+                    <div class="system-status-grid">
+                        <div class="status-item">
+                            <span class="status-dot" id="cpuStatus"></span>
+                            <span class="status-label">CPU</span>
+                            <span class="status-value" id="cpuUsage">--</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-dot" id="memoryStatus"></span>
+                            <span class="status-label">内存</span>
+                            <span class="status-value" id="memoryUsage">--</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-dot" id="gpuStatus"></span>
+                            <span class="status-label">GPU</span>
+                            <span class="status-value" id="gpuUsage">--</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="overview-section">
+                    <h3 class="section-title">Agent 信息</h3>
+                    <div class="agent-info-card">
+                        <div class="agent-info-row">
+                            <span class="agent-info-label">名称</span>
+                            <span class="agent-info-value" id="agentInfoName">AGI_Agent</span>
+                        </div>
+                        <div class="agent-info-row">
+                            <span class="agent-info-label">当前步骤</span>
+                            <span class="agent-info-value" id="agentInfoStep">0</span>
+                        </div>
+                        <div class="agent-info-row">
+                            <span class="agent-info-label">状态</span>
+                            <span class="agent-info-value" id="agentInfoStatus">运行中</span>
+                        </div>
+                        <div class="agent-info-row">
+                            <span class="agent-info-label">输入维度</span>
+                            <span class="agent-info-value" id="agentInfoDim">16</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="overview-section">
+                    <h3 class="section-title">最近活动</h3>
+                    <div class="activity-list" id="activityList"></div>
+                </div>
+            </div>
+
+            <div class="view" id="view-chat" style="display: none;">
+                <div class="chat-container">
+                    <div class="chat-sidebar">
+                        <div class="sidebar-header">
+                            <input type="text" class="search-input" id="chatSearchInput" placeholder="搜索会话...">
+                        </div>
+                        <div class="session-list" id="sessionList">
+                            <div class="session-item active">
+                                <span class="session-icon">💬</span>
+                                <span class="session-name">新会话</span>
+                                <span class="session-time">刚刚</span>
+                            </div>
+                        </div>
+                        <button class="new-session-btn" id="newSessionBtn">+ 新会话</button>
+                    </div>
+                    <div class="chat-main">
+                        <div class="chat-header">
+                            <div class="chat-title">
+                                <span class="chat-icon">🤖</span>
+                                <span id="chatSessionName">新会话</span>
+                            </div>
+                            <div class="chat-actions">
+                                <button class="chat-action-btn" id="exportSessionBtn" title="导出会话">📤</button>
+                                <button class="chat-action-btn" id="clearChatBtn" title="清空">🗑️</button>
+                                <button class="chat-action-btn" id="fastModeToggle" title="极速模式">⚡</button>
+                            </div>
+                        </div>
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="message system-message">
+                                <p>欢迎使用 OpenClaw！开始与您的智能体对话吧。</p>
+                            </div>
+                        </div>
+                        <div class="chat-input-area">
+                            <div class="slash-commands" id="slashCommands"></div>
+                            <div class="input-row">
+                                <button class="input-btn" id="voiceBtn" title="语音输入">🎤</button>
+                                <input type="text" class="chat-input" id="chatInput" placeholder="输入消息... 按 / 查看快捷命令">
+                                <button class="input-btn" id="attachBtn" title="附件">📎</button>
+                                <input type="file" id="fileInput" class="file-input" multiple style="display: none;">
+                                <button class="input-btn send-btn" id="sendBtn">发送</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-memory" style="display: none;">
+                <div class="memory-container">
+                    <div class="memory-sidebar">
+                        <div class="memory-tiers">
+                            <button class="memory-tier-btn active" data-tier="L1">L1 情境</button>
+                            <button class="memory-tier-btn" data-tier="L2">L2 工作</button>
+                            <button class="memory-tier-btn" data-tier="L3">L3 中间</button>
+                            <button class="memory-tier-btn" data-tier="L4">L4 学习</button>
+                            <button class="memory-tier-btn" data-tier="L5">L5 永久</button>
+                        </div>
+                        <div class="memory-search">
+                            <input type="text" class="search-input" id="memorySearchInput" placeholder="搜索记忆...">
+                        </div>
+                    </div>
+                    <div class="memory-main">
+                        <div class="memory-header">
+                            <h2 id="memoryHeaderTitle">记忆系统</h2>
+                            <button class="action-btn" id="addMemoryBtn">+ 添加记忆</button>
+                        </div>
+                        <div class="memory-stats" id="memoryStats"></div>
+                        <div class="memory-list" id="memoryList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-soul" style="display: none;">
+                <div class="soul-container">
+                    <div class="soul-tabs">
+                        <button class="soul-tab active" data-tab="identity">身份</button>
+                        <button class="soul-tab" data-tab="goals">目标</button>
+                        <button class="soul-tab" data-tab="boundaries">边界</button>
+                        <button class="soul-tab" data-tab="permissions">权限</button>
+                    </div>
+                    <div class="soul-content">
+                        <div class="soul-section" id="soul-identity">
+                            <h3>身份信息</h3>
+                            <div class="soul-form">
+                                <div class="form-group">
+                                    <label>名称</label>
+                                    <input type="text" id="soulName" value="AGI_Agent">
+                                </div>
+                                <div class="form-group">
+                                    <label>角色</label>
+                                    <input type="text" id="soulRole" value="Autonomous Intelligence">
+                                </div>
+                                <div class="form-group">
+                                    <label>人格特质</label>
+                                    <div class="personality-grid">
+                                        <div class="personality-item">
+                                            <label>严谨度</label>
+                                            <input type="range" id="soulRigor" min="0" max="100" value="50">
+                                            <span>50</span>
+                                        </div>
+                                        <div class="personality-item">
+                                            <label>创造力</label>
+                                            <input type="range" id="soulCreativity" min="0" max="100" value="50">
+                                            <span>50</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="soul-section" id="soul-goals" style="display: none;">
+                            <h3>目标体系</h3>
+                            <div id="soulGoalsContent"></div>
+                        </div>
+                        <div class="soul-section" id="soul-boundaries" style="display: none;">
+                            <h3>行为边界</h3>
+                            <div id="soulBoundariesContent"></div>
+                        </div>
+                        <div class="soul-section" id="soul-permissions" style="display: none;">
+                            <h3>权限设置</h3>
+                            <div id="soulPermissionsContent"></div>
+                        </div>
+                    </div>
+                    <div class="soul-footer">
+                        <button class="save-config-btn" id="saveSoulBtn">保存 SOUL</button>
+                        <button class="action-btn" id="exportSoulBtn">导出 SOUL</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-tasks" style="display: none;">
+                <div class="tasks-container">
+                    <div class="tasks-header">
+                        <h2>任务看板</h2>
+                        <div class="tasks-actions">
+                            <button class="action-btn" id="submitTaskBtn">+ 提交任务</button>
+                        </div>
+                    </div>
+                    <div class="tasks-stats" id="tasksStats"></div>
+                    <div class="tasks-board">
+                        <div class="task-column">
+                            <h3>待处理</h3>
+                            <div class="task-list" id="taskPending"></div>
+                        </div>
+                        <div class="task-column">
+                            <h3>进行中</h3>
+                            <div class="task-list" id="taskInProgress"></div>
+                        </div>
+                        <div class="task-column">
+                            <h3>已完成</h3>
+                            <div class="task-list" id="taskCompleted"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-evolution" style="display: none;">
+                <div class="evolution-container">
+                    <div class="evolution-header">
+                        <h2>进化监控</h2>
+                        <div class="evolution-actions">
+                            <button class="action-btn" id="runEvolutionBtn">运行进化</button>
+                            <button class="action-btn" id="generateSkillBtn">生成元技能</button>
+                        </div>
+                    </div>
+                    <div class="evolution-stats" id="evolutionStats"></div>
+                    <div class="evolution-section">
+                        <h3>进化提案</h3>
+                        <div class="proposal-list" id="proposalList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-security" style="display: none;">
+                <div class="security-container">
+                    <div class="security-grid">
+                        <div class="security-card">
+                            <h3>🛡️ 硬边界系统</h3>
+                            <div id="securityHardBoundary"></div>
+                        </div>
+                        <div class="security-card">
+                            <h3>⚡ 熔断器状态</h3>
+                            <div id="securityCircuitBreaker"></div>
+                        </div>
+                        <div class="security-card">
+                            <h3>📊 风险分类</h3>
+                            <div id="securityRiskClassifier"></div>
+                        </div>
+                        <div class="security-card">
+                            <h3>📝 审计日志</h3>
+                            <div id="securityAudit"></div>
+                        </div>
+                    </div>
+                    <div class="security-section">
+                        <h3>合规检查</h3>
+                        <div id="securityCompliance"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-selfimprovement" style="display: none;">
+                <div class="selfimprovement-container">
+                    <div class="selfimprovement-header">
+                        <h2>自我改进</h2>
+                        <div class="selfimprovement-actions">
+                            <button class="action-btn" id="runDiagnosticBtn">运行诊断</button>
+                            <button class="action-btn" id="generateProposalsBtn">生成改进提案</button>
+                        </div>
+                    </div>
+                    <div class="selfimprovement-grid">
+                        <div class="improvement-card">
+                            <h3>📊 性能评估</h3>
+                            <div id="improvementPerformance"></div>
+                        </div>
+                        <div class="improvement-card">
+                            <h3>🔍 诊断结果</h3>
+                            <div id="improvementDiagnostic"></div>
+                        </div>
+                        <div class="improvement-card">
+                            <h3>💡 改进提案</h3>
+                            <div id="improvementProposals"></div>
+                        </div>
+                        <div class="improvement-card">
+                            <h3>✅ 安全验证</h3>
+                            <div id="improvementSafety"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-skills" style="display: none;">
+                <div class="skills-container">
+                    <div class="skills-header">
+                        <h2>技能管理</h2>
+                        <div class="skills-actions">
+                            <button class="action-btn" id="loadSkillsBtn">加载技能</button>
+                        </div>
+                    </div>
+                    <div class="skills-list" id="skillsList"></div>
+                </div>
+            </div>
+
+            <div class="view" id="view-knowledge" style="display: none;">
+                <div class="knowledge-container">
+                    <div class="knowledge-header">
+                        <h2>知识图谱</h2>
+                        <div class="knowledge-stats" id="knowledgeStats"></div>
+                    </div>
+                    <div class="knowledge-graph" id="knowledgeGraph"></div>
+                </div>
+            </div>
+
+            <div class="view" id="view-synaptic" style="display: none;">
+                <div class="synaptic-container">
+                    <div class="synaptic-header">
+                        <h2>突触总线</h2>
+                        <div class="synaptic-stats" id="synapticStats"></div>
+                    </div>
+                    <div class="synaptic-content">
+                        <div class="synaptic-left">
+                            <div class="synaptic-section">
+                                <h3>模块活动</h3>
+                                <div class="module-activity-list" id="moduleActivityList"></div>
+                            </div>
+                            <div class="synaptic-section">
+                                <h3>振荡器状态</h3>
+                                <div class="oscillator-display" id="oscillatorDisplay"></div>
+                            </div>
+                        </div>
+                        <div class="synaptic-main">
+                            <div class="synaptic-section">
+                                <h3>突触连接拓扑</h3>
+                                <div class="synaptic-graph" id="synapticGraph"></div>
+                            </div>
+                            <div class="synaptic-section">
+                                <h3>信号流向</h3>
+                                <div class="signal-flow-chart" id="signalFlowChart"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-agents" style="display: none;">
+                <div class="agents-container">
+                    <div class="agents-header">
+                        <h2>Agent 管理</h2>
+                        <button class="action-btn" id="newAgentBtn">+ 新建 Agent</button>
+                    </div>
+                    <div class="agents-content">
+                        <div class="agent-list" id="agentList"></div>
+                        <div class="agent-detail">
+                            <h3 id="agentDetailName">Agent 详情</h3>
+                            <div id="agentDetailContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-sessions" style="display: none;">
+                <div class="sessions-container">
+                    <div class="sessions-header">
+                        <h2>会话管理</h2>
+                        <div class="sessions-actions">
+                            <button class="action-btn" id="saveAllSessionsBtn">保存所有会话</button>
+                            <button class="action-btn" id="exportAllSessionsBtn">导出所有会话</button>
+                        </div>
+                    </div>
+                    <div class="sessions-table" id="sessionsTable"></div>
+                </div>
+            </div>
+
+            <div class="view" id="view-config" style="display: none;">
+                <div class="config-container">
+                    <div class="config-tabs">
+                        <button class="config-tab active" data-tab="system">系统</button>
+                        <button class="config-tab" data-tab="agent">Agent</button>
+                        <button class="config-tab" data-tab="plugins">插件</button>
+                    </div>
+                    <div class="config-content">
+                        <div class="config-section" id="config-system">
+                            <h3>系统配置</h3>
+                            <div class="config-form">
+                                <div class="form-group">
+                                    <label>网关端口</label>
+                                    <input type="number" id="configPort" value="8000">
+                                </div>
+                                <div class="form-group">
+                                    <label>最大并发会话</label>
+                                    <input type="number" id="configMaxSessions" value="10">
+                                </div>
+                                <div class="form-group">
+                                    <label>温度</label>
+                                    <input type="range" id="configTemperature" min="0" max="1" step="0.1" value="0.7">
+                                    <span id="configTemperatureValue">0.7</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="config-section" id="config-agent" style="display: none;">
+                            <h3>Agent 配置</h3>
+                            <div class="config-form">
+                                <div class="form-group">
+                                    <label>Agent 名称</label>
+                                    <input type="text" id="configAgentName" value="OpenClaw Agent">
+                                </div>
+                                <div class="form-group">
+                                    <label>系统提示词</label>
+                                    <textarea id="configSystemPrompt" rows="4">你是一个强大的AI助手...</textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>启用工具</label>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" checked> 文件操作</label>
+                                        <label><input type="checkbox" checked> Shell 命令</label>
+                                        <label><input type="checkbox" checked> Web 浏览</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="config-section" id="config-plugins" style="display: none;">
+                            <h3>插件管理</h3>
+                            <div class="plugin-list" id="configPluginList"></div>
+                        </div>
+                    </div>
+                    <div class="config-footer">
+                        <button class="save-config-btn" id="saveConfigBtn">保存配置</button>
+                        <button class="reset-config-btn" id="resetConfigBtn">重置</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="command-palette" id="commandPalette" style="display: none;">
+            <div class="cp-header">
+                <input type="text" class="cp-search" id="cpSearch" placeholder="搜索命令...">
+                <span class="cp-shortcut">ESC</span>
+            </div>
+            <div class="cp-list" id="cpList">
+                <div class="cp-item">
+                    <span class="cp-icon">💬</span>
+                    <span class="cp-label">新建会话</span>
+                    <span class="cp-shortcut">N</span>
+                </div>
+                <div class="cp-item">
+                    <span class="cp-icon">🧠</span>
+                    <span class="cp-label">查看记忆</span>
+                    <span class="cp-shortcut">M</span>
+                </div>
+                <div class="cp-item">
+                    <span class="cp-icon">✨</span>
+                    <span class="cp-label">编辑 SOUL</span>
+                    <span class="cp-shortcut">S</span>
+                </div>
+                <div class="cp-item">
+                    <span class="cp-icon">📋</span>
+                    <span class="cp-label">任务看板</span>
+                    <span class="cp-shortcut">T</span>
+                </div>
+                <div class="cp-item">
+                    <span class="cp-icon">🧬</span>
+                    <span class="cp-label">进化监控</span>
+                    <span class="cp-shortcut">E</span>
+                </div>
+                <div class="cp-item">
+                    <span class="cp-icon">🛡️</span>
+                    <span class="cp-label">安全中心</span>
+                    <span class="cp-shortcut">F</span>
+                </div>
+                <div class="cp-item">
+                    <span class="cp-icon">🔧</span>
+                    <span class="cp-label">自我改进</span>
+                    <span class="cp-shortcut">I</span>
+                </div>
+                <div class="cp-item">
+                    <span class="cp-icon">⚙️</span>
+                    <span class="cp-label">打开配置</span>
+                    <span class="cp-shortcut">C</span>
+                </div>
+            </div>
+            <div class="cp-footer">
+                <span>上下键导航</span>
+                <span>回车键选择</span>
+            </div>
+        </div>
+
+        <div class="mobile-nav">
+            <button class="mobile-nav-item active" data-view="overview">
+                <span class="mobile-nav-icon">📊</span>
+                <span class="mobile-nav-label">概览</span>
+            </button>
+            <button class="mobile-nav-item" data-view="chat">
+                <span class="mobile-nav-icon">💬</span>
+                <span class="mobile-nav-label">聊天</span>
+            </button>
+            <button class="mobile-nav-item" data-view="memory">
+                <span class="mobile-nav-icon">🧠</span>
+                <span class="mobile-nav-label">记忆</span>
+            </button>
+            <button class="mobile-nav-item" data-view="tasks">
+                <span class="mobile-nav-icon">📋</span>
+                <span class="mobile-nav-label">任务</span>
+            </button>
+            <button class="mobile-nav-item" data-view="config">
+                <span class="mobile-nav-icon">⚙️</span>
+                <span class="mobile-nav-label">配置</span>
+            </button>
+        </div>
+
+        <div class="modal-overlay" id="modalOverlay" style="display: none;">
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <span class="modal-title" id="modalTitle">提示</span>
+                    <button class="modal-close" id="modalClose" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="modal-input" id="modalInput" placeholder="" autocomplete="off">
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn modal-btn-cancel" id="modalCancel" onclick="closeModal()">取消</button>
+                    <button class="modal-btn modal-btn-confirm" id="modalConfirm">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

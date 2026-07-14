@@ -1,0 +1,7 @@
+{
+  "port": 8000,
+  "max_sessions": 10,
+  "temperature": 0.7,
+  "agent_name": "OpenClaw Agent",
+  "system_prompt": "你是一个强大的AI助手..."
+}

@@ -1,0 +1,87 @@
+{
+  "backup_metadata": {
+    "backup_id": "BU-20260710-001",
+    "backup_time": "2026-07-10T05:35:00",
+    "operator": "system_admin",
+    "description": "删除模型及模型服务商配置前的完整数据备份",
+    "backup_type": "pre_deletion"
+  },
+  "model_config": {
+    "default_model": "gpt-4o",
+    "temperature": 0.7,
+    "config_location": {
+      "html": "agi_agent/webui/static/index.html - line 529 (configDefaultModel input)",
+      "javascript": "agi_agent/webui/static/app.js - line 755 (saveConfig), line 783 (resetConfig)"
+    }
+  },
+  "provider_config": {
+    "providers": [
+      {
+        "id": "openai",
+        "name": "OpenAI",
+        "select_value": "openai",
+        "api_url_placeholder": "https://api.openai.com/v1",
+        "is_default": true
+      },
+      {
+        "id": "anthropic",
+        "name": "Anthropic",
+        "select_value": "anthropic",
+        "api_url_placeholder": "",
+        "is_default": false
+      },
+      {
+        "id": "ollama",
+        "name": "Ollama",
+        "select_value": "ollama",
+        "api_url_placeholder": "",
+        "is_default": false
+      }
+    ],
+    "config_location": {
+      "html": "agi_agent/webui/static/index.html - lines 559-578 (config-provider section)",
+      "javascript": "agi_agent/webui/static/app.js - lines 759-761 (saveConfig provider/api_key/api_url), lines 788-790 (resetConfig)"
+    }
+  },
+  "api_endpoints": {
+    "save_config": {
+      "path": "/api/config/save",
+      "method": "POST",
+      "location": "agi_agent/webui/api_server.py - lines 672-675",
+      "note": "端点仅返回成功，未实际持久化配置数据"
+    },
+    "system_overview_providers": {
+      "path": "/api/system/overview",
+      "field": "providers",
+      "value": [],
+      "location": "agi_agent/webui/api_server.py - line 613",
+      "note": "providers字段返回空数组"
+    }
+  },
+  "related_metadata": {
+    "settings_json": {
+      "path": "agi_agent/webui/settings.json",
+      "note": "无模型或服务商配置"
+    },
+    "config_settings_py": {
+      "path": "agi_agent/config/settings.py",
+      "note": "无模型或服务商配置"
+    },
+    "env_files": "无.env文件",
+    "yaml_toml": "无YAML/TOML配置文件",
+    "llm_directory": "agi_agent/llm/ 目录为空（仅有__pycache__）"
+  },
+  "dependency_check": {
+    "active_sessions": 0,
+    "connected_channels": 0,
+    "active_llm_calls": 0,
+    "backend_llm_integration": false,
+    "cached_model_data": false,
+    "has_dependencies": false
+  },
+  "files_to_modify": [
+    "agi_agent/webui/static/index.html",
+    "agi_agent/webui/static/app.js",
+    "agi_agent/webui/api_server.py"
+  ]
+}

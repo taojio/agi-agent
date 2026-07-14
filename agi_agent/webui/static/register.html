@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw - 注册</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .register-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        }
+        .register-card {
+            background: rgba(30, 30, 50, 0.9);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(100, 100, 255, 0.2);
+        }
+        .register-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .register-logo {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+        .register-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .register-subtitle {
+            color: #888;
+            font-size: 14px;
+        }
+        .register-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group label {
+            color: #ccc;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid rgba(100, 100, 200, 0.3);
+            border-radius: 10px;
+            background: rgba(20, 20, 40, 0.8);
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #6666ff;
+            box-shadow: 0 0 20px rgba(100, 100, 255, 0.3);
+        }
+        .form-group input::placeholder {
+            color: #555;
+        }
+        .form-group input.error {
+            border-color: #ff6b6b;
+        }
+        .password-strength {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        .strength-bar {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            transition: all 0.3s ease;
+        }
+        .strength-bar.weak { background: #ff6b6b; }
+        .strength-bar.medium { background: #ffa500; }
+        .strength-bar.strong { background: #6bff9f; }
+        .password-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+        .register-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #6666ff 0%, #8888ff 100%);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        .register-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(100, 100, 255, 0.4);
+        }
+        .register-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .register-footer {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(100, 100, 200, 0.2);
+        }
+        .register-footer p {
+            color: #888;
+            font-size: 14px;
+        }
+        .register-footer a {
+            color: #6666ff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .register-footer a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            background: rgba(255, 100, 100, 0.15);
+            border: 1px solid rgba(255, 100, 100, 0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .success-message {
+            background: rgba(100, 255, 150, 0.15);
+            border: 1px solid rgba(100, 255, 150, 0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: #6bff9f;
+            font-size: 14px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .terms-link {
+            color: #6666ff;
+            text-decoration: none;
+        }
+        .terms-link:hover {
+            text-decoration: underline;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .register-card {
+            animation: fadeIn 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-card">
+            <div class="register-header">
+                <div class="register-logo">🦾</div>
+                <div class="register-title">创建账户</div>
+                <div class="register-subtitle">加入 OpenClaw 智能平台</div>
+            </div>
+
+            <div class="error-message" id="errorMsg"></div>
+            <div class="success-message" id="successMsg"></div>
+
+            <form class="register-form" id="registerForm" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="regUsername">用户名</label>
+                    <input type="text" id="regUsername" placeholder="请输入用户名" required>
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">邮箱地址</label>
+                    <input type="email" id="regEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">密码</label>
+                    <input type="password" id="regPassword" placeholder="请输入密码" required>
+                    <div class="password-strength">
+                        <div class="strength-bar" id="strength1"></div>
+                        <div class="strength-bar" id="strength2"></div>
+                        <div class="strength-bar" id="strength3"></div>
+                        <div class="strength-bar" id="strength4"></div>
+                    </div>
+                    <div class="password-hint">密码至少包含8个字符，包含大小写字母和数字</div>
+                </div>
+                <div class="form-group">
+                    <label for="regConfirmPassword">确认密码</label>
+                    <input type="password" id="regConfirmPassword" placeholder="再次输入密码" required>
+                </div>
+                <div class="form-group" style="flex-direction: row; align-items: flex-start;">
+                    <input type="checkbox" id="agreeTerms" required style="margin-right: 10px; margin-top: 2px;">
+                    <label for="agreeTerms" style="font-weight: normal; font-size: 13px;">
+                        我同意 <a href="#" class="terms-link">服务条款</a> 和 <a href="#" class="terms-link">隐私政策</a>
+                    </label>
+                </div>
+                <button class="register-btn" id="registerBtn">注册</button>
+            </form>
+
+            <div class="register-footer">
+                <p>已有账号？<a href="/login">立即登录</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function checkPasswordStrength() {
+            const password = document.getElementById('regPassword').value;
+            let strength = 0;
+
+            if (password.length >= 8) strength++;
+            if (password.length >= 12) strength++;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+            if (/\d/.test(password)) strength++;
+
+            const bars = ['strength1', 'strength2', 'strength3', 'strength4'];
+            bars.forEach((id, i) => {
+                const bar = document.getElementById(id);
+                bar.className = 'strength-bar';
+                if (i < strength) {
+                    if (strength <= 1) bar.classList.add('weak');
+                    else if (strength <= 2) bar.classList.add('medium');
+                    else bar.classList.add('strong');
+                }
+            });
+        }
+
+        function validateForm() {
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirmPassword').value;
+            const username = document.getElementById('regUsername').value;
+
+            if (password !== confirm) {
+                showError('两次输入的密码不一致');
+                return false;
+            }
+
+            if (password.length < 8) {
+                showError('密码至少需要8个字符');
+                return false;
+            }
+
+            if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) {
+                showError('密码需要包含大小写字母');
+                return false;
+            }
+
+            if (!/\d/.test(password)) {
+                showError('密码需要包含数字');
+                return false;
+            }
+
+            if (username.length < 3) {
+                showError('用户名至少需要3个字符');
+                return false;
+            }
+
+            return true;
+        }
+
+        async function register() {
+            if (!validateForm()) return;
+
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const btn = document.getElementById('registerBtn');
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            btn.disabled = true;
+            btn.textContent = '注册中...';
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    successMsg.textContent = '注册成功！正在跳转登录页面...';
+                    successMsg.style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    showError(data.detail || data.message || '注册失败');
+                }
+            } catch (error) {
+                showError('网络错误，请稍后重试');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '注册';
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        document.getElementById('regPassword').addEventListener('input', checkPasswordStrength);
+        document.getElementById('registerBtn').addEventListener('click', register);
+        document.getElementById('registerForm').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') register();
+        });
+    </script>
+</body>
+</html>
