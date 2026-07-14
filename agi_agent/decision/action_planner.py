@@ -228,3 +228,23 @@ class ActionPlanner:
 
     def resize(self, new_feature_dim: int):
         self.feature_dim = new_feature_dim
+
+    def get_available_actions(self, features: np.ndarray = None) -> List[Dict[str, Any]]:
+        actions = []
+        for name, props in self.action_primitives.items():
+            action = {
+                "name": name,
+                "cost": props.get("cost", 1.0),
+                "duration": props.get("duration", 1),
+                "type": props.get("type", "general"),
+                "available": True
+            }
+            if features is not None:
+                try:
+                    action["suitability"] = float(np.mean(features)) * (1.0 / props.get("cost", 1.0))
+                except:
+                    action["suitability"] = 0.5
+            else:
+                action["suitability"] = 0.5
+            actions.append(action)
+        return actions

@@ -346,7 +346,9 @@ class SelfEvolvingAGI:
         start_time = time.time()
 
         try:
-            return self._step_impl(raw_obs, start_time)
+            result = self._step_impl(raw_obs, start_time)
+            self.last_step_result = result
+            return result
         except Exception as e:
             import logging
             logging.getLogger("agi_agent").error(
@@ -356,7 +358,9 @@ class SelfEvolvingAGI:
                 self.audit_trail.log_entry("error", "step_exception", {
                     "step": self.train_step, "error": str(e)
                 })
-            return {"error": f"Step failed: {e}", "step": self.train_step}
+            result = {"error": f"Step failed: {e}", "step": self.train_step}
+            self.last_step_result = result
+            return result
 
     def _step_impl(self, raw_obs, start_time):
         self._step_start_time = start_time

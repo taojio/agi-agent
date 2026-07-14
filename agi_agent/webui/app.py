@@ -722,14 +722,19 @@ async def websocket_realtime(websocket: WebSocket):
             
             if agi_agent is not None and getattr(agi_agent, 'running', False):
                 try:
-                    obs = np.random.uniform(-1, 1, agi_agent.input_dim)
-                    metrics = agi_agent.step(obs)
-                    serializable_metrics = _json_serializable(metrics)
-                    updates.append({
-                        "module": "synaptic",
-                        "data": serializable_metrics,
-                        "has_data": True
-                    })
+                    serializable_metrics = _json_serializable(getattr(agi_agent, 'last_step_result', {}))
+                    if serializable_metrics:
+                        updates.append({
+                            "module": "synaptic",
+                            "data": serializable_metrics,
+                            "has_data": True
+                        })
+                    else:
+                        updates.append({
+                            "module": "synaptic",
+                            "data": {"status": "running", "message": "等待数据"},
+                            "has_data": True
+                        })
                 except Exception as e:
                     updates.append({
                         "module": "synaptic",
