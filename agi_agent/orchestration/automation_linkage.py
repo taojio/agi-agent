@@ -288,7 +288,11 @@ def create_default_linkage_rules() -> List[LinkageRule]:
 
     # ========== 规则1: 高自由能 → 进化优化 + 自我改进 ==========
     def _high_fe_condition(state: SystemState) -> bool:
-        return state.free_energy > 1.5 and state.confidence < 0.5
+        from agi_agent.core import get_adaptive_config
+        config = get_adaptive_config()
+        fe_threshold = config.get("free_energy_critical_high", 0.8)
+        conf_threshold = config.get("confidence_critical_low", 0.2)
+        return state.free_energy > fe_threshold and state.confidence < conf_threshold
 
     def _trigger_evolution(agent, state: SystemState) -> Dict[str, Any]:
         if hasattr(agent, 'dual_loop_evolution'):
@@ -326,7 +330,10 @@ def create_default_linkage_rules() -> List[LinkageRule]:
 
     # ========== 规则2: 低置信度 → 元学习策略 + 深度推理 ==========
     def _low_confidence_condition(state: SystemState) -> bool:
-        return state.confidence < 0.35 and not state.is_impasse
+        from agi_agent.core import get_adaptive_config
+        config = get_adaptive_config()
+        conf_threshold = config.get("confidence_warning_low", 0.4)
+        return state.confidence < conf_threshold and not state.is_impasse
 
     def _trigger_meta_learning(agent, state: SystemState) -> Dict[str, Any]:
         if hasattr(agent, 'meta_learning_orchestrator'):

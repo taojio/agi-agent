@@ -51,13 +51,17 @@ save_scheduler_task: Optional[asyncio.Task] = None
 cultivation_manager: Optional[CultivationManager] = None
 file_ingestor: Optional[FileIngestor] = None
 
+from agi_agent.core import get_adaptive_config
+
+_adaptive_config = get_adaptive_config()
+
 DEFAULT_SETTINGS = {
-    "input_dim": 16,
+    "input_dim": _adaptive_config.get("input_dim", 16),
     "max_steps": None,
-    "log_interval": 20,
-    "save_interval": 1000,
-    "free_energy_threshold": 0.3,
-    "novelty_threshold": 0.5,
+    "log_interval": _adaptive_config.get("log_interval", 20),
+    "save_interval": _adaptive_config.get("save_interval", 1000),
+    "free_energy_threshold": _adaptive_config.get("free_energy_threshold", 0.3),
+    "novelty_threshold": _adaptive_config.get("novelty_threshold", 0.5),
     "auto_start": True,
     "sensor_enabled": True,
     "voice_input": False,
@@ -649,7 +653,10 @@ async def autonomous_loop():
         try:
             if agi_agent and agi_agent.running and settings_store.get("auto_start", True):
                 obs = np.random.uniform(-1, 1, agi_agent.input_dim)
-                metrics = agi_agent.step(obs)
+
+                # 在线程池中执行同步的step()，避免阻塞事件循环
+                loop = asyncio.get_event_loop()
+                metrics = await loop.run_in_executor(None, agi_agent.step, obs)
 
                 if agi_agent.train_step % settings_store.get("log_interval", 20) == 0:
                     logger.info(
@@ -665,7 +672,18 @@ async def autonomous_loop():
                 if self_aware.get("limitation_awareness", 0) < 0.2:
                     logger.warning(f"Low limitation awareness detected: {self_aware.get('limitation_awareness', 0)}")
 
-            await asyncio.sleep(0.1)
+                # 自适应间隔：根据step执行时间动态调整
+                step_time = metrics.get("latency", 0.0)
+                if step_time > 2.0:
+                    sleep_interval = 2.0  # 高负载时降低频率
+                elif step_time > 1.0:
+                    sleep_interval = 1.0
+                else:
+                    sleep_interval = 0.5  # 正常情况0.5秒间隔
+            else:
+                sleep_interval = 1.0
+
+            await asyncio.sleep(sleep_interval)
         except Exception as e:
             logger.error(f"Autonomous loop error: {e}")
             await asyncio.sleep(1.0)

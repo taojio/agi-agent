@@ -1760,6 +1760,9 @@ function renderSecurityRiskClassifier(classifier) {
 }
 
 function renderSecurityAudit(audit) {
+    if (!Array.isArray(audit)) {
+        audit = [];
+    }
     if (audit.length === 0) {
         dom.securityAudit.innerHTML = '<div style="color: var(--text-muted);">暂无审计记录</div>';
         return;

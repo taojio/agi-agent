@@ -72,14 +72,19 @@ class AutomatedSelfImprovementLoop:
         self._current_iteration: Optional[IterationRecord] = None
         self._iteration_counter = 0
 
+        from agi_agent.core import get_adaptive_config
+        config = get_adaptive_config()
+
         self._performance_thresholds = {
             "free_energy": PerformanceThreshold(
                 "free_energy", min_threshold=0.0, max_threshold=1.0,
-                warning_high=0.6, critical_high=0.8
+                warning_high=config.get("free_energy_warning_high", 0.6),
+                critical_high=config.get("free_energy_critical_high", 0.8)
             ),
             "confidence": PerformanceThreshold(
                 "confidence", min_threshold=0.0, max_threshold=1.0,
-                warning_low=0.4, critical_low=0.2
+                warning_low=config.get("confidence_warning_low", 0.4),
+                critical_low=config.get("confidence_critical_low", 0.2)
             ),
             "error_rate": PerformanceThreshold(
                 "error_rate", min_threshold=0.0, max_threshold=1.0,
@@ -104,10 +109,10 @@ class AutomatedSelfImprovementLoop:
         self._test_callbacks: Dict[str, Callable] = {}
 
         self._metrics_buffer: deque = deque(maxlen=50)
-        self._improvement_interval = 100
-        self._evaluation_window = 20
-        self._min_improvement_required = 0.05
-        self._max_concurrent_improvements = 3
+        self._improvement_interval = config.get("improvement_interval", 100)
+        self._evaluation_window = config.get("evaluation_window", 20)
+        self._min_improvement_required = config.get("min_improvement_required", 0.05)
+        self._max_concurrent_improvements = config.get("max_concurrent_improvements", 3)
 
         self._enabled = True
         self._paused = False

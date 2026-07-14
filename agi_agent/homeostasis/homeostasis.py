@@ -5,6 +5,9 @@ import torch.optim as optim
 from collections import deque
 
 from ..config.settings import DEVICE
+from ..core import get_adaptive_config
+
+_adaptive_config = get_adaptive_config()
 
 
 class HomeostaticNeed:
@@ -54,43 +57,43 @@ class InternalEnergySystem:
     def __init__(self):
         self.energy = HomeostaticNeed(
             name="energy",
-            baseline=0.7,
-            threshold_low=0.3,
-            threshold_high=0.9,
-            decay_rate=0.005,
-            gain_rate=0.08
+            baseline=_adaptive_config.get("energy_baseline", 0.7),
+            threshold_low=_adaptive_config.get("energy_threshold_low", 0.3),
+            threshold_high=_adaptive_config.get("energy_threshold_high", 0.9),
+            decay_rate=_adaptive_config.get("energy_decay_rate", 0.005),
+            gain_rate=_adaptive_config.get("energy_gain_rate", 0.08)
         )
         self.attention = HomeostaticNeed(
             name="attention",
-            baseline=0.6,
-            threshold_low=0.2,
-            threshold_high=0.85,
-            decay_rate=0.01,
-            gain_rate=0.06
+            baseline=_adaptive_config.get("attention_baseline", 0.6),
+            threshold_low=_adaptive_config.get("attention_threshold_low", 0.2),
+            threshold_high=_adaptive_config.get("attention_threshold_high", 0.85),
+            decay_rate=_adaptive_config.get("attention_decay_rate", 0.01),
+            gain_rate=_adaptive_config.get("attention_gain_rate", 0.06)
         )
         self.security = HomeostaticNeed(
             name="security",
-            baseline=0.8,
-            threshold_low=0.4,
-            threshold_high=0.95,
-            decay_rate=0.003,
-            gain_rate=0.07
+            baseline=_adaptive_config.get("security_baseline", 0.8),
+            threshold_low=_adaptive_config.get("security_threshold_low", 0.4),
+            threshold_high=_adaptive_config.get("security_threshold_high", 0.95),
+            decay_rate=_adaptive_config.get("security_decay_rate", 0.003),
+            gain_rate=_adaptive_config.get("security_gain_rate", 0.07)
         )
         self.curiosity = HomeostaticNeed(
             name="curiosity",
-            baseline=0.5,
-            threshold_low=0.2,
-            threshold_high=0.8,
-            decay_rate=0.008,
-            gain_rate=0.04
+            baseline=_adaptive_config.get("curiosity_baseline", 0.5),
+            threshold_low=_adaptive_config.get("curiosity_threshold_low", 0.2),
+            threshold_high=_adaptive_config.get("curiosity_threshold_high", 0.8),
+            decay_rate=_adaptive_config.get("curiosity_decay_rate", 0.008),
+            gain_rate=_adaptive_config.get("curiosity_gain_rate", 0.04)
         )
         self.competence = HomeostaticNeed(
             name="competence",
-            baseline=0.5,
-            threshold_low=0.25,
-            threshold_high=0.85,
-            decay_rate=0.002,
-            gain_rate=0.03
+            baseline=_adaptive_config.get("competence_baseline", 0.5),
+            threshold_low=_adaptive_config.get("competence_threshold_low", 0.25),
+            threshold_high=_adaptive_config.get("competence_threshold_high", 0.85),
+            decay_rate=_adaptive_config.get("competence_decay_rate", 0.002),
+            gain_rate=_adaptive_config.get("competence_gain_rate", 0.03)
         )
 
         self.needs = {
@@ -217,15 +220,16 @@ class ActiveInferenceEngine:
         
         self.generative_model = GenerativeModel(feature_dim, action_dim)
         
-        self.prediction_error_history = deque(maxlen=200)
-        self.free_energy_history = deque(maxlen=200)
-        self.variational_params = deque(maxlen=100)
+        history_len = _adaptive_config.get("prediction_history_len", 200)
+        self.prediction_error_history = deque(maxlen=history_len)
+        self.free_energy_history = deque(maxlen=history_len)
+        self.variational_params = deque(maxlen=_adaptive_config.get("variational_params_len", 100))
         
-        self.action_noise_scale = 0.1
-        self.learning_rate = 1e-3
-        self.epistemic_weight = 0.5
+        self.action_noise_scale = _adaptive_config.get("action_noise_scale", 0.1)
+        self.learning_rate = _adaptive_config.get("active_inference_lr", 1e-3)
+        self.epistemic_weight = _adaptive_config.get("epistemic_weight", 0.5)
         
-        self.beta = 1.0
+        self.beta = _adaptive_config.get("active_inference_beta", 1.0)
 
     def compute_variational_free_energy(self, current_state, action, actual_next_state=None):
         state = torch.tensor(current_state, dtype=torch.float32).unsqueeze(0).to(DEVICE)

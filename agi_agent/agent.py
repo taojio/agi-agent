@@ -48,7 +48,13 @@ from agi_agent.orchestration import AutomationLinkageEngine, create_default_link
 
 
 class SelfEvolvingAGI:
-    def __init__(self, input_dim=16, config_path=None):
+    def __init__(self, input_dim=None, config_path=None):
+        from agi_agent.core import get_adaptive_config
+        self.adaptive_config = get_adaptive_config()
+        
+        if input_dim is None:
+            input_dim = self.adaptive_config.get("input_dim", 16)
+        
         self.input_dim = input_dim
         self.config_path = config_path
 
@@ -62,7 +68,8 @@ class SelfEvolvingAGI:
         self.meta_cog = MetaCognitionLayer()
         self.homeostasis = HomeostasisEngine(feature_dim=self.perception.get_feature_dim())
         self.evolve_engine = EvolutionEngine(config_path=config_path)
-        self.execution = ActionExecutionLayer(action_dim=8, feature_dim=self.perception.get_feature_dim())
+        action_dim = self.adaptive_config.get("action_dim", 8)
+        self.execution = ActionExecutionLayer(action_dim=action_dim, feature_dim=self.perception.get_feature_dim())
         self.knowledge_graph = KnowledgeGraph()
 
         self.advanced_reasoner = AdvancedReasoner(feature_dim=self.perception.get_feature_dim())

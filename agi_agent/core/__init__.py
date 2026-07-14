@@ -14,6 +14,7 @@ from .exceptions import (
 )
 from .config import ConfigManager, get_config
 from .registry import ModuleRegistry, get_registry
+from .adaptive_config import AdaptiveConfigManager, get_adaptive_config, adapt_param, PerformanceLevel, AdaptiveStrategy
 
 __all__ = [
     "BaseModule",
@@ -28,4 +29,9 @@ __all__ = [
     "get_config",
     "ModuleRegistry",
     "get_registry",
+    "AdaptiveConfigManager",
+    "get_adaptive_config",
+    "adapt_param",
+    "PerformanceLevel",
+    "AdaptiveStrategy",
 ]
