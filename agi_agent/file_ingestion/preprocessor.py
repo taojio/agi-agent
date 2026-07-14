@@ -56,13 +56,6 @@ class DataPreprocessor:
                 processed = self._extract_text_from_markdown(processed)
 
             quality_score = self._calculate_quality_score(processed)
-            
-            if quality_score < self.quality_threshold:
-                return PreprocessingResult(
-                    success=False,
-                    error=f"Low content quality detected: {quality_score:.2f}"
-                )
-
             chunks = self._chunk_text(processed)
             
             new_metadata = metadata.copy() if metadata else {}
