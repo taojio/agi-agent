@@ -627,41 +627,198 @@ async function loadPlugins() {
 
 function renderPlugins(plugins) {
     if (plugins.length === 0) {
-        dom.configPluginList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 40px;">暂无插件</div>';
+        dom.configPluginList.innerHTML = `
+            <div style="color: var(--text-muted); text-align: center; padding: 40px;">暂无插件</div>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="loadAllPlugins()">加载所有插件</button>
+            </div>
+        `;
         return;
     }
     
-    dom.configPluginList.innerHTML = plugins.map(plugin => `
-        <div class="plugin-item">
-            <div>
-                <h4>${plugin.name || '未命名插件'}</h4>
-                <p>${plugin.description || '无描述'}</p>
-                <span style="font-size: 11px; color: var(--text-muted);">版本: ${plugin.version || '1.0'} | 类型: ${plugin.type || 'processor'}</span>
+    const stats = {
+        total: plugins.length,
+        loaded: plugins.filter(p => p.loaded).length,
+        active: plugins.filter(p => p.status === 'active').length,
+        unloaded: plugins.filter(p => !p.loaded).length
+    };
+    
+    dom.configPluginList.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; gap: 20px;">
+                <span style="font-size: 13px; color: var(--text-secondary);">总计: ${stats.total}</span>
+                <span style="font-size: 13px; color: #4CAF50;">已加载: ${stats.loaded}</span>
+                <span style="font-size: 13px; color: #2196F3;">活跃: ${stats.active}</span>
+                <span style="font-size: 13px; color: var(--text-muted);">未加载: ${stats.unloaded}</span>
             </div>
-            <div class="plugin-toggle ${plugin.status === 'active' ? 'on' : ''}" data-plugin="${plugin.name}" onclick="togglePlugin('${plugin.name}')"></div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary btn-sm" onclick="loadAllPlugins()">加载全部</button>
+                <button class="btn btn-secondary btn-sm" onclick="activateAllPlugins()">激活全部</button>
+                <button class="btn btn-secondary btn-sm" onclick="deactivateAllPlugins()">停用全部</button>
+            </div>
         </div>
-    `).join('');
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            ${plugins.map(plugin => {
+                const isLoaded = plugin.loaded;
+                const isActive = plugin.status === 'active';
+                const statusText = isActive ? '活跃' : (isLoaded ? '已加载' : '未加载');
+                const statusColor = isActive ? '#4CAF50' : (isLoaded ? '#FF9800' : '#9E9E9E');
+                
+                return `
+                    <div class="plugin-item" style="padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 4px solid ${statusColor};">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <h4 style="margin: 0; color: var(--text-primary);">${plugin.name || '未命名插件'}</h4>
+                                    <span style="padding: 2px 8px; border-radius: 10px; font-size: 11px; background: ${statusColor}20; color: ${statusColor};">${statusText}</span>
+                                </div>
+                                <p style="margin: 8px 0; color: var(--text-secondary); font-size: 13px;">${plugin.description || '无描述'}</p>
+                                <div style="display: flex; gap: 15px; font-size: 12px; color: var(--text-muted);">
+                                    <span>版本: ${plugin.version || '1.0'}</span>
+                                    <span>类型: ${plugin.type || 'processor'}</span>
+                                    ${plugin.priority ? `<span>优先级: ${plugin.priority}</span>` : ''}
+                                    ${plugin.load_time ? `<span>加载时间: ${new Date(plugin.load_time).toLocaleTimeString()}</span>` : ''}
+                                </div>
+                                ${plugin.dependencies && plugin.dependencies.length > 0 ? `
+                                    <div style="margin-top: 8px; font-size: 12px; color: #FF9800;">
+                                        依赖: ${plugin.dependencies.join(', ')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 6px; margin-left: 20px;">
+                                ${!isLoaded ? `
+                                    <button class="btn btn-primary btn-sm" onclick="loadPlugin('${plugin.name}')">加载</button>
+                                ` : `
+                                    <button class="btn ${isActive ? 'btn-warning' : 'btn-success'} btn-sm" onclick="togglePlugin('${plugin.name}', ${!isActive})">
+                                        ${isActive ? '停用' : '激活'}
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm" onclick="reloadPlugin('${plugin.name}')">重载</button>
+                                    <button class="btn btn-danger btn-sm" onclick="unloadPlugin('${plugin.name}')">卸载</button>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
 }
 
-async function togglePlugin(pluginName) {
-    const toggle = document.querySelector(`.plugin-toggle[data-plugin="${pluginName}"]`);
-    const isActive = toggle.classList.contains('on');
-    
+async function loadPlugin(pluginName) {
     try {
-        const endpoint = isActive ? `/api/plugins/${pluginName}/deactivate` : `/api/plugins/${pluginName}/activate`;
+        const response = await fetch(`${API_BASE}/api/plugins/load`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: pluginName })
+        });
+        const data = await response.json();
+        if (data.success) {
+            loadPlugins();
+        } else {
+            alert(`加载失败: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Plugin load failed:', error);
+        alert('加载失败');
+    }
+}
+
+async function unloadPlugin(pluginName) {
+    if (!confirm(`确定要卸载插件 "${pluginName}" 吗？`)) return;
+    try {
+        const response = await fetch(`${API_BASE}/api/plugins/${pluginName}/unload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        if (data.success) {
+            loadPlugins();
+        } else {
+            alert(`卸载失败: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Plugin unload failed:', error);
+        alert('卸载失败');
+    }
+}
+
+async function togglePlugin(pluginName, activate) {
+    try {
+        const endpoint = activate ? `/api/plugins/${pluginName}/activate` : `/api/plugins/${pluginName}/deactivate`;
         const response = await fetch(`${API_BASE}${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
-        
         const data = await response.json();
-        
         if (data.success) {
-            toggle.classList.toggle('on');
             loadPlugins();
+        } else {
+            alert(`${activate ? '激活' : '停用'}失败: ${data.error}`);
         }
     } catch (error) {
         console.error('Plugin toggle failed:', error);
+        alert('操作失败');
+    }
+}
+
+async function reloadPlugin(pluginName) {
+    try {
+        const response = await fetch(`${API_BASE}/api/plugins/${pluginName}/reload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        if (data.success) {
+            loadPlugins();
+        } else {
+            alert(`重载失败: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Plugin reload failed:', error);
+        alert('重载失败');
+    }
+}
+
+async function loadAllPlugins() {
+    try {
+        const response = await fetch(`${API_BASE}/api/plugins/load_all`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        loadPlugins();
+    } catch (error) {
+        console.error('Load all plugins failed:', error);
+        alert('加载全部失败');
+    }
+}
+
+async function activateAllPlugins() {
+    try {
+        const response = await fetch(`${API_BASE}/api/plugins/activate_all`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        loadPlugins();
+    } catch (error) {
+        console.error('Activate all plugins failed:', error);
+        alert('激活全部失败');
+    }
+}
+
+async function deactivateAllPlugins() {
+    if (!confirm('确定要停用所有插件吗？')) return;
+    try {
+        const response = await fetch(`${API_BASE}/api/plugins/deactivate_all`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        loadPlugins();
+    } catch (error) {
+        console.error('Deactivate all plugins failed:', error);
+        alert('停用全部失败');
     }
 }
 
@@ -1425,7 +1582,15 @@ async function loadSoul() {
     }
 }
 
+function toArray(data) {
+    if (data === null || data === undefined) return [];
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'object') return Object.values(data);
+    try { return Array.from(data); } catch(e) { return []; }
+}
+
 function renderSoulGoals(goals) {
+    const nodes = toArray(goals.nodes);
     dom.soulGoalsContent.innerHTML = `
         <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
             <h4>使命</h4>
@@ -1434,8 +1599,8 @@ function renderSoulGoals(goals) {
         <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); margin-top: 12px;">
             <h4>目标节点</h4>
             <ul style="color: var(--text-secondary); margin-top: 8px; list-style: none; padding: 0;">
-                ${(goals.nodes || []).map((node, i) => `
-                    <li style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">${i + 1}. ${node.name || node}</li>
+                ${nodes.map((node, i) => `
+                    <li style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">${i + 1}. ${node.title || node.name || node.goal_id || String(node)}</li>
                 `).join('') || '<li>暂无目标节点</li>'}
             </ul>
         </div>
@@ -1443,19 +1608,22 @@ function renderSoulGoals(goals) {
 }
 
 function renderSoulBoundaries(boundaries) {
+    const forbiddenActions = toArray(boundaries.forbidden_actions);
+    const ethicalPrinciples = toArray(boundaries.ethical_principles);
+    const safetyRedlines = toArray(boundaries.safety_redlines);
     dom.soulBoundariesContent.innerHTML = `
         <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
             <h4>禁止行为</h4>
             <ul style="color: var(--text-secondary); margin-top: 8px;">
-                ${(boundaries.forbidden_actions || []).map((action, i) => `
-                    <li>${i + 1}. ${action}</li>
+                ${forbiddenActions.map((action, i) => `
+                    <li>${i + 1}. ${typeof action === 'object' ? action.description || action.rule_id || String(action) : action}</li>
                 `).join('') || '<li>未设置</li>'}
             </ul>
         </div>
         <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); margin-top: 12px;">
             <h4>伦理原则</h4>
             <ul style="color: var(--text-secondary); margin-top: 8px;">
-                ${(boundaries.ethical_principles || []).map((principle, i) => `
+                ${ethicalPrinciples.map((principle, i) => `
                     <li>${i + 1}. ${principle}</li>
                 `).join('') || '<li>未设置</li>'}
             </ul>
@@ -1463,7 +1631,7 @@ function renderSoulBoundaries(boundaries) {
         <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); margin-top: 12px;">
             <h4>安全红线</h4>
             <ul style="color: var(--error-color); margin-top: 8px;">
-                ${(boundaries.safety_redlines || []).map((redline, i) => `
+                ${safetyRedlines.map((redline, i) => `
                     <li>${i + 1}. ${redline}</li>
                 `).join('') || '<li>未设置</li>'}
             </ul>
@@ -1472,11 +1640,12 @@ function renderSoulBoundaries(boundaries) {
 }
 
 function renderSoulPermissions(permissions) {
+    const entries = toArray(permissions.entries);
     dom.soulPermissionsContent.innerHTML = `
         <div style="padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
             <h4>权限条目</h4>
             <ul style="color: var(--text-secondary); margin-top: 8px;">
-                ${(permissions.entries || []).map((entry, i) => `
+                ${entries.map((entry, i) => `
                     <li style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">${i + 1}. ${entry.name || entry}</li>
                 `).join('') || '<li>暂无权限条目</li>'}
             </ul>

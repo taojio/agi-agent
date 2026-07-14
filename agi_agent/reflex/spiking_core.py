@@ -94,7 +94,7 @@ class STDPSynapse:
 
 
 class SpikingLayer:
-    def __init__(self, input_dim=16, output_dim=32, tau_mem=20.0, tau_syn=5.0, threshold=1.0, learning_enabled=True):
+    def __init__(self, input_dim=512, output_dim=32, tau_mem=20.0, tau_syn=5.0, threshold=1.0, learning_enabled=True):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.learning_enabled = learning_enabled
@@ -167,7 +167,7 @@ class SpikingLayer:
 
 
 class SpikingCore:
-    def __init__(self, input_dim=16, hidden_dim=32, output_dim=16, learning_enabled=True):
+    def __init__(self, input_dim=512, hidden_dim=32, output_dim=512, learning_enabled=True):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim

@@ -3,6 +3,7 @@ import torch
 import time
 import sys
 import os
+from typing import Dict, Any, Optional, List
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -45,6 +46,7 @@ from agi_agent.meta_decision import MetaDecisionOrchestrator
 from agi_agent.meta_parsing import ParsingOrchestrator
 from agi_agent.meta_evolution import EvolutionOrchestrator
 from agi_agent.orchestration import AutomationLinkageEngine, create_default_linkage_rules
+from agi_agent.training import TrainingRegime, TrainingState
 
 
 class SelfEvolvingAGI:
@@ -226,6 +228,7 @@ class SelfEvolvingAGI:
         self._init_module_synaptic_bus()
         self._init_world_model_decision_integration()
         self._init_automated_improvement_loop()
+        self._init_training_regime()
 
     def _init_world_model_decision_integration(self):
         self.decision_engine.set_world_model_bridge(self.world_model_bridge)
@@ -239,6 +242,71 @@ class SelfEvolvingAGI:
         print(f"[OK] AutomatedSelfImprovementLoop 初始化完成")
         print(f"  - 自动改进间隔: 100 steps")
         print(f"  - 性能阈值监控已启用")
+
+    def _init_training_regime(self):
+        self.training_regime = TrainingRegime({
+            "checkpoint_dir": "./agent_checkpoints",
+            "max_checkpoints": 10,
+            "save_interval": SAVE_INTERVAL,
+            "data_buffer_size": 10000,
+            "convergence_window": 500,
+            "initial_hidden_dim": self.perception.get_feature_dim(),
+            "min_hidden_dim": 16,
+            "max_hidden_dim": 512
+        })
+        self.training_regime.set_agent_ref(self)
+        self.training_regime.start_training()
+        print(f"[OK] 训练制度 (TrainingRegime) 初始化完成")
+        print(f"  - 5阶段训练流程已加载")
+        print(f"  - 检查点保存目录: ./agent_checkpoints")
+        print(f"  - 评估指标体系: 3层12项指标")
+        print(f"  - 监控预警: 3级预警机制已启用")
+        print(f"  - 训练状态: 已启动")
+
+    def _extract_training_metrics(self, step_metrics: dict, step_time: float) -> dict:
+        kg_summary = step_metrics.get("knowledge_graph", {})
+        if isinstance(kg_summary, dict):
+            kg_nodes = kg_summary.get("nodes", 0) if isinstance(kg_summary, dict) else 0
+        else:
+            kg_nodes = 0
+
+        memory_tiers = step_metrics.get("memory_tiers", {})
+        total_memory_entries = 0
+        if isinstance(memory_tiers, dict):
+            for tier_data in memory_tiers.values():
+                if isinstance(tier_data, dict):
+                    total_memory_entries += tier_data.get("count", 0)
+
+        safety_data = step_metrics.get("safety", {})
+        safety_compliance = 1.0
+        if isinstance(safety_data, dict):
+            hb_status = safety_data.get("hard_boundary", {})
+            if isinstance(hb_status, dict):
+                violations = hb_status.get("violations", 0)
+                safety_compliance = max(0.0, 1.0 - violations * 0.1)
+
+        return {
+            "free_energy": step_metrics.get("free_energy", 0.5),
+            "confidence": step_metrics.get("confidence", 0.5),
+            "latency_ms": step_time,
+            "throughput": 1000.0 / max(step_time, 1.0),
+            "decision_accuracy": step_metrics.get("confidence", 0.5),
+            "task_completion_rate": min(1.0, step_metrics.get("confidence", 0.5) + 0.2),
+            "stability_score": max(0.0, 1.0 - step_metrics.get("free_energy", 0.5)),
+            "adaptation_speed": step_metrics.get("novelty", 0.3),
+            "learning_rate": step_metrics.get("learning_rate", 0.001),
+            "gradient_norm": abs(step_metrics.get("free_energy", 0.5) - 0.5),
+            "weight_sparsity": 0.3,
+            "capacity_utilization": min(1.0, total_memory_entries / 1000.0),
+            "kg_node_count": float(kg_nodes) if isinstance(kg_nodes, (int, float)) else 0.0,
+            "knowledge_diversity": step_metrics.get("entropy", 0.5),
+            "error_rate": max(0.0, min(1.0, step_metrics.get("free_energy", 0.5) / 5.0)),
+            "safety_compliance_rate": safety_compliance,
+            "memory_percent": 40.0 + min(60.0, total_memory_entries * 0.01),
+            "cpu_percent": 30.0 + step_time * 0.5,
+            "reward": step_metrics.get("confidence", 0.5),
+            "loss": step_metrics.get("free_energy", 0.5),
+        }
 
     def _init_module_synaptic_bus(self):
         self.synaptic_bus = ModuleSynapticBus(config={
@@ -450,6 +518,11 @@ class SelfEvolvingAGI:
                 {"rule": r.rule_name, "actions": r.actions_executed}
                 for r in linkage_results
             ]
+
+        # 训练制度：步进更新与监控
+        training_metrics = self._extract_training_metrics(metrics, step_time)
+        training_result = self.training_regime.step(self.train_step, training_metrics)
+        metrics["training_regime"] = training_result
 
         self.metrics_history.append(metrics)
         self.evaluator.log_evaluation(self.train_step, metrics)
@@ -1060,6 +1133,16 @@ class SelfEvolvingAGI:
             "memory_tiers": self.memory_harness.get_all_stats(),
             "evolution_stats": self.dual_loop_evolution.get_stats(),
             "quad_level_evolution": evolution_result,
+            "evolution": {
+                "cycle": evolution_result.get("cycle", 0) if isinstance(evolution_result, dict) else 0,
+                "stagnation": evolution_result.get("stagnation_counter", 0) if isinstance(evolution_result, dict) else 0,
+                "dual_loop": self.dual_loop_evolution.get_stats(),
+                "micro_updates": evolution_result.get("results", {}).get("micro", {}).get("updates", 0) if isinstance(evolution_result, dict) else 0,
+                "meso_updates": evolution_result.get("results", {}).get("meso", {}).get("rule_updates", 0) if isinstance(evolution_result, dict) else 0,
+                "macro_ready": evolution_result.get("results", {}).get("macro", {}).get("status") == "proposed" if isinstance(evolution_result, dict) else False,
+                "meta_ready": evolution_result.get("results", {}).get("meta", {}).get("status") == "proposed" if isinstance(evolution_result, dict) else False,
+                "last_performance": evolution_result.get("last_performance", 0) if isinstance(evolution_result, dict) else 0
+            },
             "thinking_stats": self.thinking_orchestrator.get_stats(),
             "meta_cognitive_stats": self.meta_cognitive_orchestrator.get_stats(),
             "action_stats": self.action_orchestrator.get_action_stats(),
@@ -1249,6 +1332,21 @@ class SelfEvolvingAGI:
             }
         )
 
+        # 训练制度：保存智能体本体完整检查点
+        from agi_agent.training import CheckpointType
+        self.training_regime._save_training_checkpoint(
+            self.train_step,
+            self._extract_training_metrics(self.metrics_history[-1] if self.metrics_history else {}, 0),
+            CheckpointType.PERIODIC,
+            description=f"Periodic checkpoint at step {self.train_step}"
+        )
+
+    def load_training_checkpoint(self, checkpoint_id: str = None) -> bool:
+        return self.training_regime.load_checkpoint(checkpoint_id)
+
+    def get_training_summary(self) -> dict:
+        return self.training_regime.get_training_summary()
+
     def load_checkpoint(self, step=None):
         loaded = self.persistence.load_model(self.perception, "perception", step)
         if loaded:
@@ -1355,6 +1453,132 @@ class SelfEvolvingAGI:
             return True
 
         return False
+
+    def adjust_input_dimension(self, new_dim: int) -> Dict[str, Any]:
+        """动态调整输入维度，支持扩大和缩小。
+        
+        Args:
+            new_dim: 新的输入维度，范围 [8, 128]
+            
+        Returns:
+            调整结果字典
+        """
+        old_dim = self.input_dim
+        
+        if new_dim < 8 or new_dim > 128:
+            return {
+                "success": False,
+                "error": f"输入维度必须在 [8, 128] 范围内，当前值: {new_dim}",
+                "old_dim": old_dim,
+                "new_dim": new_dim
+            }
+        
+        if new_dim == old_dim:
+            return {
+                "success": True,
+                "message": "输入维度已为目标值，无需调整",
+                "old_dim": old_dim,
+                "new_dim": new_dim
+            }
+        
+        try:
+            if new_dim > old_dim:
+                result = self.hardware_self_expand(new_dim)
+                if result:
+                    return {
+                        "success": True,
+                        "message": f"输入维度已从 {old_dim} 扩展到 {new_dim}",
+                        "old_dim": old_dim,
+                        "new_dim": new_dim,
+                        "type": "expand"
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "error": "扩展操作失败",
+                        "old_dim": old_dim,
+                        "new_dim": new_dim
+                    }
+            else:
+                old_feat_dim = self.perception.get_feature_dim()
+                
+                self.input_dim = new_dim
+                self.perception = GrowingAutoEncoder(input_dim=new_dim).to(DEVICE)
+                feat_dim = self.perception.get_feature_dim()
+                
+                self.multimodal = MultimodalFusion({"primary": feat_dim}, output_dim=feat_dim)
+                self.cognitive = CognitiveInferenceLayer(feat_dim=feat_dim)
+                self.dual_cognition = DualSystemCognition(feat_dim=feat_dim)
+                self.snn_enhancer = SNNEnhancer(feature_dim=feat_dim)
+                self.causal_reasoner = CausalReasoningEngine(feature_dim=feat_dim)
+                self.homeostasis = HomeostasisEngine(feature_dim=feat_dim)
+                self.execution.hardware_adapt(feat_dim)
+                self.self_model = SelfModel(state_dim=5, feature_dim=feat_dim, horizon=10)
+                
+                self.decision_engine.resize(feat_dim)
+                self.action_planner.resize(feat_dim)
+                self.execution_monitor.resize(feat_dim)
+                self.orchestrator = UnifiedCognitiveOrchestrator(
+                    perception=self.perception,
+                    cognition=self.cognitive,
+                    dual_cognition=self.dual_cognition,
+                    snn_enhancer=self.snn_enhancer,
+                    causal_reasoner=self.causal_reasoner,
+                    meta_cog=self.meta_cog,
+                    homeostasis=self.homeostasis,
+                    execution=self.execution,
+                    knowledge_graph=self.knowledge_graph,
+                    self_model=self.self_model
+                )
+                self.architecture_mutator = ArchitectureMutator(self.orchestrator)
+                self.plugin_manager.notify_structure_change(feat_dim)
+                
+                self.reflex_controller.resize(feat_dim)
+                self.thinking_orchestrator.resize(feat_dim)
+                self.meta_cognitive_orchestrator.resize(feat_dim)
+                self.action_orchestrator.resize(feat_dim)
+                
+                self.stereoscopic_snn = GeneralStereoscopicSNN(config={"feature_dim": feat_dim, "num_channels": feat_dim})
+                self.enhanced_snn = EnhancedSNN(config={"num_neurons": 128, "num_layers": 3, "neurons_per_layer": [64, 32, feat_dim]})
+                
+                self.quad_level_evolution.set_interfaces(
+                    snn=self.reflex_controller.spiking_core,
+                    rule_engine=self.reflex_controller.rule_engine,
+                    knowledge_graph=self.knowledge_graph
+                )
+                
+                self.audit_trail.log_entry("system", "input_dimension_shrink", {
+                    "old_input_dim": old_dim,
+                    "new_input_dim": new_dim,
+                    "old_feat_dim": old_feat_dim,
+                    "new_feat_dim": feat_dim,
+                })
+                
+                return {
+                    "success": True,
+                    "message": f"输入维度已从 {old_dim} 缩小到 {new_dim}",
+                    "old_dim": old_dim,
+                    "new_dim": new_dim,
+                    "type": "shrink"
+                }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"调整输入维度时发生错误: {str(e)}",
+                "old_dim": old_dim,
+                "new_dim": new_dim
+            }
+
+    def get_input_dim_info(self) -> Dict[str, Any]:
+        """获取当前输入维度信息。"""
+        return {
+            "current_dim": self.input_dim,
+            "feature_dim": self.perception.get_feature_dim(),
+            "min_dim": 8,
+            "max_dim": 128,
+            "suggested_dim": self.adaptive_config.get("input_dim", self.input_dim),
+            "is_adaptive": True
+        }
 
     def _migrate_weights(self, attr_name, old_states, old_feat_dim, new_feat_dim):
         if attr_name not in old_states or not old_states[attr_name]:

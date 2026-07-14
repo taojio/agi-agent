@@ -161,7 +161,7 @@ class SymbolicSelfModel:
             ],
             parameters=[
                 {"name": "learning_rate", "type": "float", "min": 1e-5, "max": 0.1, "default": 1e-3, "tier": "param_rule"},
-                {"name": "feature_dim", "type": "int", "min": 8, "max": 256, "default": 16, "tier": "module"},
+                {"name": "feature_dim", "type": "int", "min": 8, "max": 512, "default": 512, "tier": "module"},
             ],
             rules=[],
             performance_children=["multimodal_fusion"],

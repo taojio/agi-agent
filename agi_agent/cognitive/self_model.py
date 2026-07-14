@@ -232,6 +232,11 @@ class SelfModel:
         
         self.trajectory_history = deque(maxlen=100)
         self.self_awareness_score = 0.5
+        self.self_referential_knowledge = {
+            "self_recognition": 0.5,
+            "self_model_accuracy": 0.5,
+            "metacognitive_awareness": 0.5
+        }
         
         self.homeostatic_baselines = {
             'energy': 0.7,
@@ -326,6 +331,16 @@ class SelfModel:
         self.competence_assessor.update_estimates()
         
         return reflection
+
+    def introspect(self, context=None):
+        if context is None:
+            context = {}
+        
+        current_state = context.get('current_state', [0.5] * self.state_dim)
+        trajectory = self.predict_self_trajectory(current_state)
+        action_result = context.get('action_result')
+        
+        return self.generate_self_reflection(current_state, trajectory, action_result)
     
     def assess_capability_for_goal(self, goal_type):
         capability_requirements = {

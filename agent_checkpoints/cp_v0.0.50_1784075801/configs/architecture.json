@@ -1,0 +1,5 @@
+{
+  "hidden_dim": 16,
+  "num_layers": 3,
+  "connection_density": 0.8
+}

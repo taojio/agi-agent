@@ -365,7 +365,7 @@ class TestKnowledgeIntegrator(unittest.TestCase):
 
 class TestMultimodalFusion(unittest.TestCase):
     def setUp(self):
-        self.fusion = MultimodalFusion({"visual": 16, "audio": 8, "text": 12}, output_dim=16)
+        self.fusion = MultimodalFusion({"visual": 16, "audio": 8, "text": 12}, output_dim=512)
 
     def test_forward(self):
         inputs = {

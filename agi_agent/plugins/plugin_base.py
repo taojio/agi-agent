@@ -188,6 +188,15 @@ class PeripheralPlugin(ABC):
 
     def get_info(self) -> Dict[str, Any]:
         """获取插件信息。"""
+        def _safe_config_value(value):
+            if isinstance(value, (dict, list, str, int, float, bool, type(None))):
+                if isinstance(value, dict):
+                    return {k: _safe_config_value(v) for k, v in value.items()}
+                elif isinstance(value, list):
+                    return [_safe_config_value(v) for v in value]
+                return value
+            return str(value)
+        
         return {
             "name": self.name,
             "version": self.version,
@@ -195,7 +204,7 @@ class PeripheralPlugin(ABC):
             "type": self.plugin_type,
             "priority": self.priority.value,
             "status": self.status.value,
-            "config": self.config,
+            "config": _safe_config_value(self.config),
             "dependencies": self.dependencies,
             "hook_points": [hp.value for hp in self.hook_points],
             "error_count": self._error_count,

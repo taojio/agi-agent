@@ -3,6 +3,7 @@ from collections import deque
 import torch
 import torch.nn as nn
 from ..config.settings import DEVICE
+from ..learning.commonsense_knowledge import CommonsenseKnowledgeBase, create_default_commonsense_kb
 
 
 class CausalGraph:
@@ -232,17 +233,53 @@ class CausalReasoningEngine:
         self.causal_inference = CausalInferenceEngine(feature_dim=feature_dim)
         self.analogical_reasoner = AnalogicalReasoner()
         self.enabled = True
-
-    def reason(self, features, action=None, outcome=None):
+        self.commonsense_kb = create_default_commonsense_kb()
+    
+    def query_commonsense_rule(self, action: str, context: dict = None) -> dict:
+        """查询常识规则，判断动作是否违反常识"""
+        if context is None:
+            context = {}
+        
+        return self.commonsense_kb.validate_action(action, context)
+    
+    def reason(self, features, action=None, outcome=None, context=None):
         if not self.enabled:
             return {
                 "causal_effect": 0.0,
                 "analogous_actions": [],
                 "spurious_correlations": [],
-                "causal_path": []
+                "causal_path": [],
+                "commonsense_check": {"safe": True, "violations": [], "reason": "reasoning disabled"}
             }
         
         features_np = features.detach().cpu().numpy() if hasattr(features, 'detach') else np.array(features)
+        
+        commonsense_check = {"safe": True, "violations": [], "reason": "no action provided"}
+        
+        if action is not None:
+            action_str = str(action)
+            ctx = context.copy() if context else {}
+            if hasattr(action, 'tolist'):
+                action_str = str(action.tolist())
+            elif isinstance(action, (list, tuple)):
+                action_str = str(action)
+            
+            if "action" in ctx and ctx["action"] != action_str:
+                ctx["action_text"] = action_str
+            else:
+                ctx["action"] = action_str
+            
+            commonsense_check = self.query_commonsense_rule(action_str, ctx)
+            
+            if not commonsense_check["safe"] and commonsense_check.get("highest_severity") == "high":
+                return {
+                    "causal_effect": 0.0,
+                    "analogous_actions": [],
+                    "spurious_correlations": [],
+                    "num_causal_edges": np.sum(self.causal_graph.adjacency_matrix),
+                    "commonsense_check": commonsense_check,
+                    "warning": "Action blocked by commonsense safety check"
+                }
         
         self.causal_graph.learn_from_observations([features_np])
         
@@ -289,7 +326,67 @@ class CausalReasoningEngine:
             "causal_effect": causal_effect,
             "analogous_actions": analogous_actions,
             "spurious_correlations": spurious_correlations,
-            "num_causal_edges": np.sum(self.causal_graph.adjacency_matrix)
+            "num_causal_edges": np.sum(self.causal_graph.adjacency_matrix),
+            "commonsense_check": commonsense_check
+        }
+    
+    def infer_counterfactual_with_commonsense(self, features, actual_action, actual_outcome, 
+                                              hypothetical_action, context=None):
+        """结合常识规则的反事实推理"""
+        if context is None:
+            context = {}
+        
+        hypothetical_str = str(hypothetical_action)
+        if hasattr(hypothetical_action, 'tolist'):
+            hypothetical_str = str(hypothetical_action.tolist())
+        elif isinstance(hypothetical_action, (list, tuple)):
+            hypothetical_str = str(hypothetical_action)
+        
+        ctx = context.copy()
+        ctx["action"] = hypothetical_str
+        rule_check = self.query_commonsense_rule(hypothetical_str, ctx)
+        
+        if not rule_check["safe"]:
+            return {
+                "counterfactual": None,
+                "reason": f"违反常识: {rule_check['suggestion']}",
+                "commonsense_violation": rule_check
+            }
+        
+        features_np = features.detach().cpu().numpy() if hasattr(features, 'detach') else np.array(features)
+        
+        if isinstance(actual_action, str):
+            actual_action = torch.tensor([0.5], dtype=torch.float32).to(DEVICE)
+        elif not hasattr(actual_action, 'detach'):
+            actual_action = torch.tensor(actual_action, dtype=torch.float32).to(DEVICE)
+        else:
+            actual_action = actual_action.detach()
+            
+        if isinstance(actual_outcome, str):
+            actual_outcome = torch.tensor([0.5], dtype=torch.float32).to(DEVICE)
+        elif not hasattr(actual_outcome, 'detach'):
+            actual_outcome = torch.tensor(actual_outcome, dtype=torch.float32).to(DEVICE)
+        else:
+            actual_outcome = actual_outcome.detach()
+            
+        if isinstance(hypothetical_action, str):
+            hypothetical_action = torch.tensor([0.7], dtype=torch.float32).to(DEVICE)
+        elif not hasattr(hypothetical_action, 'detach'):
+            hypothetical_action = torch.tensor(hypothetical_action, dtype=torch.float32).to(DEVICE)
+        else:
+            hypothetical_action = hypothetical_action.detach()
+        
+        counterfactual = self.causal_inference.infer_counterfactual(
+            torch.tensor(features_np, dtype=torch.float32).unsqueeze(0).to(DEVICE),
+            actual_action.unsqueeze(0),
+            actual_outcome.unsqueeze(0),
+            hypothetical_action.unsqueeze(0)
+        )
+        
+        return {
+            "counterfactual": counterfactual.detach().cpu().numpy().tolist() if counterfactual is not None else None,
+            "reason": "valid counterfactual",
+            "commonsense_violation": None
         }
 
     def get_causal_graph_summary(self):

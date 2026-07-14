@@ -94,6 +94,19 @@ def save_settings_to_file(settings):
 settings_store = load_settings_from_file()
 
 
+def normalize_to_list(data):
+    if data is None:
+        return []
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        return list(data.values())
+    try:
+        return list(data)
+    except (TypeError, ValueError):
+        return []
+
+
 class ChatMessage(BaseModel):
     role: str = "user"
     sender: str = "user"
@@ -537,6 +550,155 @@ async def update_cultivation_status():
     }
 
 
+@app.get("/api/training/summary")
+async def get_training_summary():
+    global agi_agent
+    if agi_agent is None or not hasattr(agi_agent, 'training_regime'):
+        raise HTTPException(status_code=400, detail="Agent or training regime not initialized")
+    
+    return agi_agent.get_training_summary()
+
+
+@app.get("/api/training/phase")
+async def get_training_phase():
+    global agi_agent
+    if agi_agent is None or not hasattr(agi_agent, 'training_regime'):
+        raise HTTPException(status_code=400, detail="Agent or training regime not initialized")
+    
+    phase_info = agi_agent.training_regime.phase_manager.get_summary()
+    return phase_info
+
+
+@app.get("/api/training/goals")
+async def get_training_goals():
+    global agi_agent
+    if agi_agent is None or not hasattr(agi_agent, 'training_regime'):
+        raise HTTPException(status_code=400, detail="Agent or training regime not initialized")
+    
+    goals_info = agi_agent.training_regime.goal_manager.get_summary()
+    return goals_info
+
+
+@app.get("/api/training/evaluation")
+async def get_training_evaluation():
+    global agi_agent
+    if agi_agent is None or not hasattr(agi_agent, 'training_regime'):
+        raise HTTPException(status_code=400, detail="Agent or training regime not initialized")
+    
+    eval_report = agi_agent.training_regime.evaluator.get_evaluation_report()
+    return eval_report
+
+
+@app.get("/api/training/monitor")
+async def get_training_monitor():
+    global agi_agent
+    if agi_agent is None or not hasattr(agi_agent, 'training_regime'):
+        raise HTTPException(status_code=400, detail="Agent or training regime not initialized")
+    
+    monitor_status = agi_agent.training_regime.monitor.get_current_status()
+    return monitor_status
+
+
+@app.get("/api/training/checkpoints")
+async def get_training_checkpoints():
+    global agi_agent
+    if agi_agent is None or not hasattr(agi_agent, 'training_regime'):
+        raise HTTPException(status_code=400, detail="Agent or training regime not initialized")
+    
+    ckpt_info = agi_agent.training_regime.checkpoint_manager.get_summary()
+    return ckpt_info
+
+
+@app.post("/api/training/checkpoint/save")
+async def save_training_checkpoint(description: str = "manual_save"):
+    global agi_agent
+    if agi_agent is None or not hasattr(agi_agent, 'training_regime'):
+        raise HTTPException(status_code=400, detail="Agent or training regime not initialized")
+    
+    from agi_agent.training import CheckpointType
+    metrics = agi_agent._extract_training_metrics(
+        agi_agent.metrics_history[-1] if agi_agent.metrics_history else {},
+        0
+    )
+    
+    checkpoint_id = agi_agent.training_regime._save_training_checkpoint(
+        agi_agent.train_step,
+        metrics,
+        CheckpointType.TRIGGERED,
+        description=description
+    )
+    
+    return {
+        "status": "success",
+        "checkpoint_id": checkpoint_id
+    }
+
+
+@app.post("/api/training/checkpoint/load")
+async def load_training_checkpoint(checkpoint_id: str = None):
+    global agi_agent
+    if agi_agent is None or not hasattr(agi_agent, 'training_regime'):
+        raise HTTPException(status_code=400, detail="Agent or training regime not initialized")
+    
+    success = agi_agent.load_training_checkpoint(checkpoint_id)
+    return {
+        "status": "success" if success else "failed",
+        "checkpoint_id": checkpoint_id
+    }
+
+
+@app.get("/api/training/architecture")
+async def get_training_architecture():
+    global agi_agent
+    if agi_agent is None or not hasattr(agi_agent, 'training_regime'):
+        raise HTTPException(status_code=400, detail="Agent or training regime not initialized")
+    
+    arch_stats = agi_agent.training_regime.architecture_optimizer.get_optimization_stats()
+    return arch_stats
+
+
+@app.get("/api/training/data")
+async def get_training_data_stats():
+    global agi_agent
+    if agi_agent is None or not hasattr(agi_agent, 'training_regime'):
+        raise HTTPException(status_code=400, detail="Agent or training regime not initialized")
+    
+    data_stats = agi_agent.training_regime.data_pipeline.get_quality_stats()
+    return data_stats
+
+
+@app.get("/api/adaptive/input_dim")
+async def get_input_dim_info():
+    global agi_agent
+    if agi_agent is None:
+        raise HTTPException(status_code=400, detail="Agent not initialized")
+    
+    return agi_agent.get_input_dim_info()
+
+
+@app.post("/api/adaptive/input_dim")
+async def adjust_input_dim(new_dim: int):
+    global agi_agent
+    if agi_agent is None:
+        raise HTTPException(status_code=400, detail="Agent not initialized")
+    
+    result = agi_agent.adjust_input_dimension(new_dim)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "调整失败"))
+    return result
+
+
+@app.post("/api/adaptive/auto_adjust")
+async def auto_adjust_input_dim():
+    global agi_agent
+    if agi_agent is None:
+        raise HTTPException(status_code=400, detail="Agent not initialized")
+    
+    suggested_dim = agi_agent.adaptive_config.get("input_dim", agi_agent.input_dim)
+    result = agi_agent.adjust_input_dimension(suggested_dim)
+    return result
+
+
 @app.post("/api/chat/send")
 async def send_message(message: ChatMessage):
     global chat_history
@@ -859,13 +1021,13 @@ async def list_loaded_plugins():
 
 
 @app.post("/api/plugins/load")
-async def load_plugin(filepath: str = None, plugin_name: str = None):
+async def load_plugin(data: Dict[str, Any] = Body(...)):
     """加载插件。"""
     if plugin_manager is None:
-        raise HTTPException(status_code=400, detail="Plugin manager not initialized")
+        return {"success": False, "error": "Plugin manager not initialized"}
+    plugin_name = data.get("name")
+    filepath = data.get("filepath")
     result = plugin_manager.load_plugin(filepath=filepath, plugin_name=plugin_name)
-    if not result["success"]:
-        raise HTTPException(status_code=400, detail=result.get("error", "Load failed"))
     return result
 
 
@@ -1493,15 +1655,15 @@ async def get_soul_info():
             },
             "goals": {
                 "mission": soul.goals.mission,
-                "nodes": soul.goals.to_dict().get("nodes", [])
+                "nodes": normalize_to_list(soul.goals.to_dict().get("nodes"))
             },
             "boundaries": {
-                "forbidden_actions": soul.boundaries.forbidden_actions,
-                "ethical_principles": soul.boundaries.ethical_principles,
-                "safety_redlines": soul.boundaries.safety_redlines
+                "forbidden_actions": normalize_to_list(soul.boundaries.forbidden_actions),
+                "ethical_principles": normalize_to_list(soul.boundaries.ethical_principles),
+                "safety_redlines": normalize_to_list(soul.boundaries.safety_redlines)
             },
             "permissions": {
-                "entries": soul.permissions.to_dict().get("entries", [])
+                "entries": normalize_to_list(soul.permissions.to_dict().get("entries"))
             },
             "version": soul.version.version
         }
@@ -2464,6 +2626,22 @@ async def get_knowledge_graph():
         nodes = []
         edges = []
         
+        if hasattr(agi_agent, 'enhanced_knowledge_graph') and agi_agent.enhanced_knowledge_graph:
+            ekg = agi_agent.enhanced_knowledge_graph
+            viz_data = ekg.get_visualization_data(max_nodes=100, max_edges=200)
+            return {
+                "stats": {
+                    "nodes": viz_data["total_nodes"],
+                    "edges": viz_data["total_edges"],
+                    "similarity_threshold": 0.8
+                },
+                "graph": {
+                    "nodes": viz_data["nodes"],
+                    "edges": viz_data["edges"],
+                    "layout_method": viz_data["layout_method"]
+                }
+            }
+        
         if hasattr(agi_agent, 'knowledge_graph') and agi_agent.knowledge_graph:
             kg = agi_agent.knowledge_graph
             if hasattr(kg, 'nodes') and kg.nodes:
@@ -2477,17 +2655,6 @@ async def get_knowledge_graph():
                     elif hasattr(edge, '__iter__') and len(list(edge)) >= 2:
                         edge_list = list(edge)
                         edges.append({"from": str(edge_list[0]), "to": str(edge_list[1]), "weight": edge_list[2] if len(edge_list) > 2 else 1.0})
-        
-        if hasattr(agi_agent, 'enhanced_knowledge_graph') and agi_agent.enhanced_knowledge_graph:
-            ekg = agi_agent.enhanced_knowledge_graph
-            if hasattr(ekg, 'nodes') and ekg.nodes:
-                for node_id, node in ekg.nodes.items():
-                    node_name = str(node.data)[:50] if hasattr(node, 'data') else str(node_id)[:50]
-                    nodes.append({"id": f"enhanced_{node_id}", "name": node_name, "category": "enhanced"})
-            if hasattr(ekg, 'edges') and ekg.edges:
-                for edge in ekg.edges:
-                    if isinstance(edge, dict) and 'from' in edge and 'to' in edge:
-                        edges.append({"from": f"enhanced_{edge['from']}", "to": f"enhanced_{edge['to']}", "weight": edge.get('weight', 1.0)})
         
         return {
             "stats": {

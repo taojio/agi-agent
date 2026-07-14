@@ -1,0 +1,31 @@
+{
+  "optimizer_type": "adamw",
+  "initial_learning_rate": 0.001,
+  "min_learning_rate": 1e-06,
+  "max_learning_rate": 0.1,
+  "learning_rate_pool": [
+    0.0001,
+    0.0005,
+    0.001,
+    0.002,
+    0.005
+  ],
+  "weight_decay": 0.01,
+  "l2_regularization": 0.0001,
+  "dropout_rate": 0.1,
+  "gradient_clip_threshold": 1.0,
+  "batch_size": 32,
+  "epochs": 100,
+  "warmup_steps": 100,
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "epsilon": 1e-08,
+  "loss_weights": {
+    "reconstruction": 0.4,
+    "kl_divergence": 0.3,
+    "confidence": 0.1,
+    "sparsity": 0.1,
+    "consistency": 0.05,
+    "safety": 0.05
+  }
+}

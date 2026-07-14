@@ -124,7 +124,7 @@ class AgentStateManager:
             },
             "model_states": {},
             "config": {
-                "input_dim": int(agent.input_dim) if hasattr(agent, 'input_dim') else 16,
+                "input_dim": int(agent.input_dim) if hasattr(agent, 'input_dim') else 512,
                 "autonomous_mode": bool(agent.autonomous_mode) if hasattr(agent, 'autonomous_mode') else True,
                 "running": bool(agent.running) if hasattr(agent, 'running') else True,
             }

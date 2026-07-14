@@ -27,6 +27,10 @@ class RelationType(Enum):
     IMPLIES = "implies"
     CONTRADICTS = "contradicts"
     EQUIVALENT_TO = "equivalent_to"
+    VIOLATES = "violates"
+    PREVENTS = "prevents"
+    ENABLES = "enables"
+    REQUIRES = "requires"
 
 
 class EntityType(Enum):
@@ -83,6 +87,119 @@ class KGNode:
             "tags": self.tags,
             "metadata": self.metadata
         }
+
+
+class CommonsenseRule(KGNode):
+    """常识规则节点，扩展KGNode支持条件-结论形式的规则表达"""
+    
+    def __init__(self, rule_id: str, antecedent: List[str], consequent: str,
+                 confidence: float = 0.9, category: str = "physics",
+                 severity: str = "medium", description: str = "",
+                 tags: List[str] = None):
+        rule_label = f"Rule: {', '.join(antecedent)} -> {consequent}"
+        super().__init__(rule_id, rule_label, EntityType.RULE, description=description)
+        
+        self.antecedent = antecedent
+        self.consequent = consequent
+        self.confidence = confidence
+        self.category = category
+        self.severity = severity
+        self.violation_count = 0
+        self.trigger_count = 0
+        self.tags = tags if tags is not None else []
+        self.properties["antecedent"] = antecedent
+        self.properties["consequent"] = consequent
+        self.properties["category"] = category
+        self.properties["severity"] = severity
+        self.properties["tags"] = self.tags
+    
+    def evaluate(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """评估规则是否被违反"""
+        conditions_met = []
+        conditions_not_met = []
+        
+        all_context_text = ""
+        for key, value in context.items():
+            if isinstance(value, str):
+                all_context_text += " " + value
+            elif isinstance(value, (list, tuple)):
+                for item in value:
+                    if isinstance(item, str):
+                        all_context_text += " " + item
+        
+        for condition in self.antecedent:
+            condition_lower = condition.lower()
+            found = False
+            
+            if condition_lower in all_context_text.lower():
+                found = True
+            else:
+                for key, value in context.items():
+                    if isinstance(value, str):
+                        value_lower = value.lower()
+                        if condition_lower in value_lower or value_lower in condition_lower:
+                            found = True
+                            break
+                        for word in condition_lower.split():
+                            if word in value_lower:
+                                found = True
+                                break
+                        if found:
+                            break
+                    elif isinstance(value, (list, tuple)):
+                        for item in value:
+                            if isinstance(item, str):
+                                item_lower = item.lower()
+                                if condition_lower in item_lower or item_lower in condition_lower:
+                                    found = True
+                                    break
+                                for word in condition_lower.split():
+                                    if word in item_lower:
+                                        found = True
+                                        break
+                                if found:
+                                    break
+                        if found:
+                            break
+            
+            if found:
+                conditions_met.append(condition)
+            else:
+                conditions_not_met.append(condition)
+        
+        all_conditions_met = len(conditions_not_met) == 0
+        
+        return {
+            "violated": all_conditions_met,
+            "conditions_met": conditions_met,
+            "conditions_not_met": conditions_not_met,
+            "rule_id": self.node_id,
+            "consequent": self.consequent,
+            "category": self.category,
+            "severity": self.severity,
+            "confidence": self.confidence
+        }
+    
+    def record_violation(self):
+        """记录规则违反"""
+        self.violation_count += 1
+        self.confidence = min(1.0, self.confidence + 0.01)
+    
+    def record_trigger(self):
+        """记录规则触发"""
+        self.trigger_count += 1
+    
+    def to_dict(self):
+        base_dict = super().to_dict()
+        base_dict.update({
+            "antecedent": self.antecedent,
+            "consequent": self.consequent,
+            "category": self.category,
+            "severity": self.severity,
+            "violation_count": self.violation_count,
+            "trigger_count": self.trigger_count
+        })
+        return base_dict
 
 
 class KGEdge:
@@ -510,3 +627,290 @@ class EnhancedKnowledgeGraph:
             "relation_types": list(self.relation_index.keys()),
             "entity_types": list(EntityType.__members__.keys())
         }
+
+    def get_visualization_data(self, max_nodes: int = 100, max_edges: int = 200,
+                               focus_node: str = None, depth: int = 2) -> Dict[str, Any]:
+        """获取知识图谱可视化数据，包含布局信息。"""
+        nodes_data = []
+        edges_data = []
+        included_nodes = set()
+
+        if focus_node and focus_node in self.nodes:
+            included_nodes.add(focus_node)
+            queue = [(focus_node, 0)]
+            
+            while queue and len(included_nodes) < max_nodes:
+                current, current_depth = queue.pop(0)
+                if current_depth >= depth:
+                    continue
+                
+                for edge in self.edges.get(current, []):
+                    if edge.target not in included_nodes:
+                        included_nodes.add(edge.target)
+                        queue.append((edge.target, current_depth + 1))
+        else:
+            sorted_nodes = sorted(self.nodes.items(), key=lambda x: -x[1].activation_count)
+            for node_id, node in sorted_nodes[:max_nodes]:
+                included_nodes.add(node_id)
+
+        layout_positions = self._compute_layout(list(included_nodes))
+
+        for node_id in included_nodes:
+            node = self.nodes[node_id]
+            pos = layout_positions.get(node_id, {"x": 0, "y": 0})
+            nodes_data.append({
+                "id": node_id,
+                "label": node.label,
+                "entity_type": node.entity_type.value,
+                "activation_count": node.activation_count,
+                "confidence": node.confidence,
+                "x": pos["x"],
+                "y": pos["y"],
+                "size": max(10, min(50, node.activation_count * 2 + node.confidence * 10)),
+                "color": self._get_node_color(node.entity_type, node.confidence),
+                "properties": node.properties,
+                "tags": node.tags,
+                "description": node.description
+            })
+
+        edge_count = 0
+        for node_id in included_nodes:
+            for edge in self.edges.get(node_id, []):
+                if edge_count >= max_edges:
+                    break
+                if edge.target in included_nodes:
+                    edges_data.append({
+                        "source": node_id,
+                        "target": edge.target,
+                        "relation_type": edge.relation_type.value,
+                        "weight": edge.weight,
+                        "confidence": edge.confidence,
+                        "evidence_count": edge.evidence_count,
+                        "directed": edge.directed,
+                        "color": self._get_edge_color(edge.relation_type),
+                        "width": max(1, min(8, edge.weight * edge.confidence * 6))
+                    })
+                    edge_count += 1
+
+        return {
+            "nodes": nodes_data,
+            "edges": edges_data,
+            "layout_method": "force_directed",
+            "total_nodes": len(self.nodes),
+            "total_edges": sum(len(edges) for edges in self.edges.values()),
+            "focus_node": focus_node
+        }
+
+    def _compute_layout(self, node_ids: List[str]) -> Dict[str, Dict[str, float]]:
+        """使用力导向布局算法计算节点位置。"""
+        positions = {}
+        n = len(node_ids)
+        
+        for i, node_id in enumerate(node_ids):
+            base_angle = (i / n) * 2 * np.pi
+            radius = 100 + (i % 3) * 50
+            
+            if len(self.nodes) <= 10:
+                positions[node_id] = {
+                    "x": np.cos(base_angle) * 80,
+                    "y": np.sin(base_angle) * 80
+                }
+            else:
+                ring = i // 20
+                angle_in_ring = (i % 20) / 20 * 2 * np.pi
+                ring_radius = 60 + ring * 50
+                
+                positions[node_id] = {
+                    "x": np.cos(angle_in_ring) * ring_radius + (np.random.rand() - 0.5) * 20,
+                    "y": np.sin(angle_in_ring) * ring_radius + (np.random.rand() - 0.5) * 20
+                }
+
+        return positions
+
+    def _get_node_color(self, entity_type: EntityType, confidence: float) -> str:
+        """根据实体类型和置信度获取节点颜色。"""
+        base_colors = {
+            EntityType.CONCEPT: "#4F81BD",
+            EntityType.INSTANCE: "#9BBB59",
+            EntityType.EVENT: "#F79646",
+            EntityType.ACTION: "#C0504D",
+            EntityType.ATTRIBUTE: "#8064A2",
+            EntityType.RELATION: "#4BACC6",
+            EntityType.RULE: "#F2F2F2",
+            EntityType.SCHEMA: "#000000"
+        }
+        
+        base_color = base_colors.get(entity_type, "#4F81BD")
+        confidence_factor = 0.5 + confidence * 0.5
+        
+        try:
+            hex_color = base_color.lstrip('#')
+            r = int(hex_color[0:2], 16)
+            g = int(hex_color[2:4], 16)
+            b = int(hex_color[4:6], 16)
+            
+            r = int(r * confidence_factor)
+            g = int(g * confidence_factor)
+            b = int(b * confidence_factor)
+            
+            return f"#{r:02X}{g:02X}{b:02X}"
+        except:
+            return base_color
+
+    def _get_edge_color(self, relation_type: RelationType) -> str:
+        """根据关系类型获取边颜色。"""
+        edge_colors = {
+            RelationType.IS_A: "#0070C0",
+            RelationType.PART_OF: "#00B050",
+            RelationType.CAUSES: "#FF6B6B",
+            RelationType.LOCATED_IN: "#70AD47",
+            RelationType.USED_FOR: "#5B9BD5",
+            RelationType.HAS_PROPERTY: "#ED7D31",
+            RelationType.SIMILAR_TO: "#A5A5A5",
+            RelationType.OPPOSITE_OF: "#FF0000",
+            RelationType.PRECEDES: "#FFC000",
+            RelationType.FOLLOWS: "#00B0F0",
+            RelationType.RELATED_TO: "#7030A0",
+            RelationType.DEFINES: "#255E91",
+            RelationType.INSTANCE_OF: "#385485",
+            RelationType.SUBCLASS_OF: "#1F4E79",
+            RelationType.COMPOSED_OF: "#548235",
+            RelationType.INTERACTS_WITH: "#C00000",
+            RelationType.DEPENDS_ON: "#7030A0",
+            RelationType.IMPLIES: "#FF6600",
+            RelationType.CONTRADICTS: "#FF0000",
+            RelationType.EQUIVALENT_TO: "#00B050",
+            RelationType.VIOLATES: "#FF4444",
+            RelationType.PREVENTS: "#44FF44",
+            RelationType.ENABLES: "#4444FF",
+            RelationType.REQUIRES: "#FF44FF"
+        }
+        
+        return edge_colors.get(relation_type, "#808080")
+
+    def validate_and_clean_relations(self):
+        """验证并清理低质量关系，提高关系准确性。"""
+        cleaned_count = 0
+        
+        for from_node in list(self.edges.keys()):
+            original_count = len(self.edges[from_node])
+            self.edges[from_node] = [
+                edge for edge in self.edges[from_node]
+                if edge.confidence > 0.2 and edge.evidence_count > 0
+            ]
+            cleaned_count += original_count - len(self.edges[from_node])
+
+        for relation_key in list(self.relation_index.keys()):
+            self.relation_index[relation_key] = [
+                (s, t) for s, t in self.relation_index[relation_key]
+                if s in self.edges and any(e.target == t for e in self.edges[s])
+            ]
+
+        return cleaned_count
+
+    def batch_import(self, entities: List[Dict], relations: List[Dict]) -> Dict[str, int]:
+        """批量导入实体和关系。"""
+        imported_nodes = 0
+        imported_edges = 0
+        
+        for entity in entities:
+            try:
+                entity_type = EntityType(entity.get("entity_type", "concept"))
+            except ValueError:
+                entity_type = EntityType.CONCEPT
+                
+            node_id = self.add_node(
+                label=entity.get("label", ""),
+                entity_type=entity_type,
+                description=entity.get("description", ""),
+                properties=entity.get("properties")
+            )
+            imported_nodes += 1
+
+        for relation in relations:
+            from_node = relation.get("from")
+            to_node = relation.get("to")
+            if from_node in self.nodes and to_node in self.nodes:
+                try:
+                    rel_type = RelationType(relation.get("relation_type", "related_to"))
+                except ValueError:
+                    rel_type = RelationType.RELATED_TO
+                
+                success = self.add_edge(
+                    from_node=from_node,
+                    to_node=to_node,
+                    relation_type=rel_type,
+                    weight=relation.get("weight", 1.0),
+                    strength=relation.get("strength", 0.5),
+                    description=relation.get("description", "")
+                )
+                if success:
+                    imported_edges += 1
+
+        return {
+            "imported_nodes": imported_nodes,
+            "imported_edges": imported_edges,
+            "total_nodes": len(self.nodes),
+            "total_edges": sum(len(edges) for edges in self.edges.values())
+        }
+
+    def get_top_nodes_by_activation(self, k: int = 20) -> List[Dict]:
+        """获取激活次数最高的节点。"""
+        sorted_nodes = sorted(
+            self.nodes.items(),
+            key=lambda x: -x[1].activation_count
+        )[:k]
+        
+        return [
+            {
+                "id": node_id,
+                "label": node.label,
+                "entity_type": node.entity_type.value,
+                "activation_count": node.activation_count,
+                "confidence": node.confidence,
+                "neighbor_count": len(self.edges.get(node_id, []))
+            }
+            for node_id, node in sorted_nodes
+        ]
+
+    def get_relation_statistics(self) -> Dict[str, Any]:
+        """获取关系统计信息。"""
+        stats = {}
+        
+        for rel_type in RelationType:
+            edges = self.query_by_relation(rel_type)
+            if edges:
+                avg_weight = np.mean([e["weight"] for e in edges])
+                avg_confidence = np.mean([e["confidence"] for e in edges])
+                stats[rel_type.value] = {
+                    "count": len(edges),
+                    "avg_weight": float(avg_weight),
+                    "avg_confidence": float(avg_confidence),
+                    "evidence_count": sum(e["evidence_count"] for e in edges)
+                }
+        
+        return stats
+
+    def search_nodes(self, query: str, max_results: int = 10) -> List[Dict]:
+        """搜索节点。"""
+        query_lower = query.lower()
+        results = []
+        
+        for node_id, node in self.nodes.items():
+            if query_lower in node.label.lower() or \
+               query_lower in node.description.lower():
+                results.append({
+                    "id": node_id,
+                    "label": node.label,
+                    "entity_type": node.entity_type.value,
+                    "confidence": node.confidence,
+                    "activation_count": node.activation_count,
+                    "match_score": (
+                        0.6 if query_lower in node.label.lower() else 0
+                    ) + (
+                        0.4 if query_lower in node.description.lower() else 0
+                    )
+                })
+        
+        results.sort(key=lambda x: -x["match_score"])
+        return results[:max_results]

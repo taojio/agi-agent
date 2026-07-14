@@ -188,7 +188,7 @@ agi_agent = None
 def get_agent() -> SelfEvolvingAGI:
     global agi_agent
     if agi_agent is None:
-        agi_agent = SelfEvolvingAGI(input_dim=16)
+        agi_agent = SelfEvolvingAGI(input_dim=512)
     return agi_agent
 
 
@@ -233,7 +233,7 @@ async def get_agent_metrics(current_user=Depends(require_auth)):
 async def run_agent_step(input_data: Dict[str, Any] = Body(...), current_user=Depends(require_auth)):
     """执行代理单步"""
     agent = get_agent()
-    obs = input_data.get("observation", [0.0] * 16)
+    obs = input_data.get("observation", [0.0] * 512)
     if len(obs) < agent.input_dim:
         obs = obs + [0.0] * (agent.input_dim - len(obs))
     obs = obs[:agent.input_dim]
@@ -352,15 +352,15 @@ async def get_soul_info(current_user=Depends(require_auth)):
         },
         "goals": {
             "mission": soul.goals.mission,
-            "nodes": soul.goals.to_dict().get("nodes", [])
+            "nodes": normalize_to_list(soul.goals.to_dict().get("nodes"))
         },
         "boundaries": {
-            "forbidden_actions": soul.boundaries.forbidden_actions,
-            "ethical_principles": soul.boundaries.ethical_principles,
-            "safety_redlines": soul.boundaries.safety_redlines
+            "forbidden_actions": normalize_to_list(soul.boundaries.forbidden_actions),
+            "ethical_principles": normalize_to_list(soul.boundaries.ethical_principles),
+            "safety_redlines": normalize_to_list(soul.boundaries.safety_redlines)
         },
         "permissions": {
-            "entries": soul.permissions.to_dict().get("entries", [])
+            "entries": normalize_to_list(soul.permissions.to_dict().get("entries")) 
         },
         "version": soul.version.version
     }

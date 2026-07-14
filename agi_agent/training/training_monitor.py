@@ -225,14 +225,14 @@ class TrainingMonitor:
 
         return metrics
 
-    def record_step_metrics(self, metrics: Dict[str, float], step: int):
+    def record_step_metrics(self, metrics: Dict[str, float], step: int) -> List[AlertRecord]:
         record = {
             "step": step,
             "timestamp": time.time(),
             **metrics
         }
         self.performance_metrics_history.append(record)
-        self.check_metrics(metrics, step)
+        return self.check_metrics(metrics, step)
 
     def get_current_status(self) -> Dict[str, Any]:
         overall_level = AlertLevel.NORMAL
