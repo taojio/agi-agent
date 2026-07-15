@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agi_agent.config.settings import DEVICE, EVOLVE_TRIGGER_STEP, SAVE_INTERVAL, EVAL_INTERVAL
 from agi_agent.utils.metrics import calc_free_energy, calc_entropy, calc_kl_divergence, calc_confidence, calc_novelty, calc_convergence_speed
 from agi_agent.perception import GrowingAutoEncoder, MultimodalFusion
-from agi_agent.cognitive import CognitiveInferenceLayer, DualSystemCognition, SNNEnhancer, CausalReasoningEngine, UnifiedCognitiveOrchestrator, ArchitectureMutator, SelfModel, GeneralStereoscopicSNN, EnhancedSNN, ModuleSynapticBus, INTERFACE_MAP
+from agi_agent.cognitive import CognitiveInferenceLayer, DualSystemCognition, SNNEnhancer, CausalReasoningEngine, UnifiedCognitiveOrchestrator, ArchitectureMutator, SelfModel, GeneralStereoscopicSNN, EnhancedSNN, ModuleSynapticBus, INTERFACE_MAP, SpikingGrowthNetwork, NetworkDimensions
 from agi_agent.learning import MetaLearningLayer, KnowledgeGraph, StructuredKnowledgeIngestor
 from agi_agent.evolution import EvolutionEngine, MetaSkillGenerator, DualLoopEvolution, EvolutionLevel, QuadLevelEvolution
 from agi_agent.execution import ActionExecutionLayer
@@ -106,20 +106,8 @@ class SelfEvolvingAGI:
             boundaries={"safety": "high", "resource_usage": "medium"}
         )
 
-        self.orchestrator = UnifiedCognitiveOrchestrator(
-            perception=self.perception,
-            cognition=self.cognitive,
-            dual_cognition=self.dual_cognition,
-            snn_enhancer=self.snn_enhancer,
-            causal_reasoner=self.causal_reasoner,
-            meta_cog=self.meta_cog,
-            homeostasis=self.homeostasis,
-            execution=self.execution,
-            knowledge_graph=self.knowledge_graph,
-            self_model=self.self_model
-        )
-        self.architecture_mutator = ArchitectureMutator(self.orchestrator)
-        self.knowledge_ingestor = StructuredKnowledgeIngestor(self.knowledge_graph, self.causal_reasoner)
+        self.architecture_mutator = None
+        self.knowledge_ingestor = None
 
         self.persistence = PersistenceManager()
         self.safety_monitor = SafetyMonitor()
@@ -187,6 +175,35 @@ class SelfEvolvingAGI:
         
         self.stereoscopic_snn = GeneralStereoscopicSNN(config={"feature_dim": self.perception.get_feature_dim(), "num_channels": self.perception.get_feature_dim()})
         self.enhanced_snn = EnhancedSNN(config={"num_neurons": 128, "num_layers": 3, "neurons_per_layer": [64, 32, self.perception.get_feature_dim()]})
+        self.growth_snn = SpikingGrowthNetwork(
+            dimensions=NetworkDimensions(
+                num_neurons=100,
+                num_synapses=500,
+                input_size=self.perception.get_feature_dim(),
+                output_size=self.perception.get_feature_dim(),
+                num_layers=3,
+            )
+        )
+        print(f"[OK] SpikingGrowthNetwork 初始化完成")
+        print(f"  - 神经元数量: {len(self.growth_snn.neurons)}")
+        print(f"  - 突触数量: {len(self.growth_snn.synapses)}")
+        print(f"  - 输入/输出维度: {self.growth_snn.dimensions.input_size}")
+
+        self.orchestrator = UnifiedCognitiveOrchestrator(
+            perception=self.perception,
+            cognition=self.cognitive,
+            dual_cognition=self.dual_cognition,
+            snn_enhancer=self.snn_enhancer,
+            causal_reasoner=self.causal_reasoner,
+            meta_cog=self.meta_cog,
+            homeostasis=self.homeostasis,
+            execution=self.execution,
+            knowledge_graph=self.knowledge_graph,
+            self_model=self.self_model,
+            growth_snn=self.growth_snn
+        )
+        self.architecture_mutator = ArchitectureMutator(self.orchestrator)
+        self.knowledge_ingestor = StructuredKnowledgeIngestor(self.knowledge_graph, self.causal_reasoner)
 
         self.hard_boundary = HardBoundarySystem()
         self.risk_classifier = RiskClassifier()
@@ -1170,6 +1187,7 @@ class SelfEvolvingAGI:
                 "existence_awareness": self.self_model.self_referential_knowledge.get("existence_awareness", 0.5),
                 "temporal_continuity": self.self_model.self_referential_knowledge.get("temporal_continuity", 0.5)
             },
+            "growth_snn": orchestrator_result.get('growth_snn_stats', {}),
             "automation_linkage": self.linkage_engine.get_stats()
         }
 

@@ -74,12 +74,23 @@ def run_training_mode(total_steps=1000, input_dim=16):
 
         if step % 100 == 0:
             training_info = result.get("training_regime", {})
+            growth_snn_info = result.get("growth_snn", {})
+            
+            growth_log = ""
+            if growth_snn_info:
+                growth_log = (
+                    f" | SNN: N={growth_snn_info.get('num_neurons', 0)}, "
+                    f"S={growth_snn_info.get('num_synapses', 0)}, "
+                    f"FR={growth_snn_info.get('avg_firing_rate', 0):.4f}"
+                )
+            
             logger.info(
                 f"Step {step}/{total_steps} | "
                 f"FE: {result.get('free_energy', 0):.4f} | "
                 f"Conf: {result.get('confidence', 0):.4f} | "
                 f"Phase: {training_info.get('phase_name', 'N/A')} | "
                 f"Score: {training_info.get('overall_score', 0):.4f}"
+                f"{growth_log}"
             )
 
     logger.info("=" * 60)
@@ -111,7 +122,7 @@ def main():
     args = sys.argv[1:]
     mode = "webui"
     training_steps = 1000
-    input_dim = 16
+    input_dim = 512
 
     i = 0
     while i < len(args):
