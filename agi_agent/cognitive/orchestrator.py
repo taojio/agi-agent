@@ -1,12 +1,14 @@
 import numpy as np
 import torch
+import time
 from collections import deque
 from ..config.settings import DEVICE
 
 
 class UnifiedCognitiveOrchestrator:
     def __init__(self, perception, cognition, dual_cognition, snn_enhancer, causal_reasoner, 
-                 meta_cog, homeostasis, execution, knowledge_graph, self_model=None):
+                 meta_cog, homeostasis, execution, knowledge_graph, self_model=None,
+                 growth_snn=None):
         self.perception = perception
         self.cognition = cognition
         self.dual_cognition = dual_cognition
@@ -17,6 +19,7 @@ class UnifiedCognitiveOrchestrator:
         self.execution = execution
         self.knowledge_graph = knowledge_graph
         self.self_model = self_model
+        self.growth_snn = growth_snn
         
         if self.self_model is not None and hasattr(self.homeostasis, 'set_self_model'):
             self.homeostasis.set_self_model(self.self_model)
@@ -27,16 +30,45 @@ class UnifiedCognitiveOrchestrator:
             'homeostasis_to_snn': 0.4,
             'metacog_to_architecture': 0.5,
             'knowledge_to_cognition': 0.3,
-            'self_model_to_goal': 0.4
+            'self_model_to_goal': 0.4,
+            'growth_snn_blend': 0.3,
         }
         
         self.history = deque(maxlen=50)
         self.enabled = True
+
+        # 原子任务模块运行时服务（可选注入，缺失时退化为 no-op）
+        self.observability = None
+        self.infrastructure = None
+        self.working_memory = None
+
+    def set_runtime_services(self, observability=None, infrastructure=None, working_memory=None):
+        """注入原子任务清单模块提供的运行时服务（可观测性/基础设施/工作记忆）。
+
+        缺失或为 None 的服务将退化为 no-op，不影响既有编排流程。
+        """
+        if observability is not None:
+            self.observability = observability
+        if infrastructure is not None:
+            self.infrastructure = infrastructure
+        if working_memory is not None:
+            self.working_memory = working_memory
     
     def orchestrate(self, obs_tensor):
         if not self.enabled:
             return None
-        
+
+        _trace_id = None
+        _span_id = None
+        _orch_start = None
+        try:
+            if self.observability and self.observability.get("chain_logger"):
+                _orch_start = time.time()
+                _trace_id = self.observability["chain_logger"].start_trace("cognitive_orchestrate")
+                _span_id = self.observability["chain_logger"].start_span(_trace_id, "orchestrate")
+        except Exception:
+            pass
+
         feat, fe, structure_changed = self.perception.update(obs_tensor)
         
         if structure_changed:
@@ -47,6 +79,15 @@ class UnifiedCognitiveOrchestrator:
         self.snn_enhancer.set_learning_rate(self._homeostasis_driven_learning_rate())
         
         enhanced_feat = self.snn_enhancer.enhance(fused_feat)
+        
+        growth_snn_output = None
+        growth_snn_stats = None
+        if self.growth_snn is not None:
+            growth_input = enhanced_feat.detach().cpu().numpy() if hasattr(enhanced_feat, 'detach') else np.array(enhanced_feat)
+            
+            growth_input_flat = growth_input.flatten()
+            growth_snn_output = self.growth_snn.step(input_signal=growth_input_flat, t=self._get_current_time())
+            growth_snn_stats = self.growth_snn.get_statistics()
         
         self_reflection = None
         internal_state_prediction = None
@@ -116,7 +157,20 @@ class UnifiedCognitiveOrchestrator:
             'is_impasse': is_impasse,
             'self_awareness': self_reflection.get('self_awareness', 0.5) if self_reflection else 0.5
         })
-        
+
+        try:
+            _dur_ms = (time.time() - _orch_start) * 1000.0 if _orch_start is not None else 0.0
+            if self.observability and self.observability.get("chain_logger") and _span_id is not None:
+                self.observability["chain_logger"].end_span(_span_id, {
+                    "confidence": confidence, "system_used": system_used, "is_impasse": is_impasse,
+                })
+            if self.observability and self.observability.get("metrics"):
+                self.observability["metrics"].record("orchestration_duration_ms", _dur_ms)
+                self.observability["metrics"].gauge("confidence", float(confidence))
+                self.observability["metrics"].counter("orchestration_total")
+        except Exception:
+            pass
+
         return {
             'prediction': final_pred,
             'action': action,
@@ -130,12 +184,16 @@ class UnifiedCognitiveOrchestrator:
             'mutation_proposal': mutation_proposal,
             'homeostatic_goal': homeo_goal,
             'self_reflection': self_reflection,
-            'internal_state_prediction': internal_state_prediction
+            'internal_state_prediction': internal_state_prediction,
+            'growth_snn_stats': growth_snn_stats,
         }
     
     def _integrate_multimodal(self, feat):
         feat_np = feat.detach().cpu().numpy() if hasattr(feat, 'detach') else np.array(feat)
         return feat_np
+    
+    def _get_current_time(self):
+        return len(self.history) * 1.0
     
     def _homeostasis_driven_learning_rate(self):
         if hasattr(self.homeostasis, 'get_needs_status'):
@@ -229,6 +287,17 @@ class UnifiedCognitiveOrchestrator:
             self.homeostasis = type(self.homeostasis)(feature_dim=new_dim)
         if self.self_model is not None:
             self.self_model.resize(new_dim)
+        if self.growth_snn is not None:
+            from .growth_snn import NetworkDimensions, SpikingGrowthNetwork
+            self.growth_snn = SpikingGrowthNetwork(
+                dimensions=NetworkDimensions(
+                    num_neurons=self.growth_snn.dimensions.num_neurons,
+                    num_synapses=self.growth_snn.dimensions.num_synapses,
+                    input_size=new_dim,
+                    output_size=new_dim,
+                    num_layers=self.growth_snn.dimensions.num_layers,
+                )
+            )
     
     def _calc_entropy(self, features):
         feat_np = np.array(features) if not isinstance(features, np.ndarray) else features

@@ -1216,8 +1216,8 @@ async def health_check():
 
 
 @app.get("/metrics", tags=["monitoring"])
-async def get_metrics():
-    """Prometheus 指标端点"""
+async def get_metrics(current_user=Depends(require_auth)):
+    """Prometheus 指标端点（需要认证）"""
     from agi_agent.monitoring import HealthChecker
     checker = HealthChecker()
     return Response(content=checker.format_prometheus(), media_type="text/plain")

@@ -67,7 +67,7 @@ class PhaseRecord:
     phase: TrainingPhase
     start_step: int
     end_step: Optional[int] = None
-    start_time: float = field(default_factory=time.time)
+    start_time: float = time.time()
     end_time: Optional[float] = None
     metrics_at_start: Dict[str, float] = field(default_factory=dict)
     metrics_at_end: Dict[str, float] = field(default_factory=dict)

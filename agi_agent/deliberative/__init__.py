@@ -15,6 +15,14 @@ from .advanced_reasoner import AdvancedReasoner
 from .abstract_thinking import AbstractionEngine
 from .neuro_symbolic_reasoner import NeuroSymbolicReasoner, SymbolType, NeuralSymbol, SymbolicExpression, InferenceRule
 from .neuro_symbolic_world_coordinator import NeuroSymbolicWorldCoordinator, InteractionProtocol, CoordinationMessage
+from .chain_of_thought_engine import ChainOfThoughtEngine, ReasoningMode
+from .enhanced_symbolic_reasoner import (
+    EnhancedSymbolicReasoner, Predicate, PredicateType, Quantifier,
+    LogicalOperator, RelationType
+)
+from .reasoning_strategy_selector import (
+    StrategySelector, StrategyPerformanceMetric, StrategySelectionMode
+)
 
 __all__ = ["ProblemFormulator", "ProblemDefinition",
            "HypothesisGenerator", "Hypothesis",
@@ -25,4 +33,8 @@ __all__ = ["ProblemFormulator", "ProblemDefinition",
            "AutonomousThinkingEngine", "ThinkingOrchestrator",
            "AdvancedReasoner", "AbstractionEngine",
            "NeuroSymbolicReasoner", "SymbolType", "NeuralSymbol", "SymbolicExpression", "InferenceRule",
-           "NeuroSymbolicWorldCoordinator", "InteractionProtocol", "CoordinationMessage"]
+           "NeuroSymbolicWorldCoordinator", "InteractionProtocol", "CoordinationMessage",
+           "ChainOfThoughtEngine", "ReasoningMode",
+           "EnhancedSymbolicReasoner", "Predicate", "PredicateType", "Quantifier",
+           "LogicalOperator", "RelationType",
+           "StrategySelector", "StrategyPerformanceMetric", "StrategySelectionMode"]

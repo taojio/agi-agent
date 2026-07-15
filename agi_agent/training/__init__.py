@@ -7,6 +7,11 @@ from .training_params import TrainingParams, LearningRateScheduler, ParamSpec
 from .evaluation_system import MetricTier, TrainingEvaluator, ConvergenceDetector
 from .training_monitor import AlertLevel, TrainingMonitor, InterventionEngine
 from .checkpoint_manager import CheckpointManager, CheckpointType
+from .nas_engine import (
+    NeuralArchitectureSearch, EvolutionaryNAS, ReinforcementLearningNAS, BayesianNAS,
+    ArchitectureGenerator, ArchitectureSpace, ArchitectureCandidate, NASResult,
+    ModelType, LayerType, SearchStrategy, LayerConfig,
+)
 
 __all__ = [
     "TrainingRegime",
@@ -32,4 +37,16 @@ __all__ = [
     "InterventionEngine",
     "CheckpointManager",
     "CheckpointType",
+    "NeuralArchitectureSearch",
+    "EvolutionaryNAS",
+    "ReinforcementLearningNAS",
+    "BayesianNAS",
+    "ArchitectureGenerator",
+    "ArchitectureSpace",
+    "ArchitectureCandidate",
+    "NASResult",
+    "ModelType",
+    "LayerType",
+    "SearchStrategy",
+    "LayerConfig",
 ]

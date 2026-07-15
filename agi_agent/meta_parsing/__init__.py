@@ -8,6 +8,7 @@ meta_parsing/__init__.py - 元解析模块
 - DataTransformer: 数据转换器，实现元层次的数据转换
 - ComplexDataProcessor: 复杂数据处理器
 - ParsingOrchestrator: 解析编排器
+- MetaParsingIntegration: 元解析模块深度集成控制器
 """
 from .meta_parser import (
     MetaParser, ParsingStrategy, ParsingResult,
@@ -22,6 +23,17 @@ from .complex_data_processor import (
     DataUnderstanding, SchemaInference,
 )
 from .orchestrator import ParsingOrchestrator
+from .integration import (
+    MetaParsingIntegration,
+    SemanticAnalysisLevel,
+    ContextRelationType,
+    MultimodalDataType,
+    ParsingOptimizationTrigger,
+    SemanticFeature,
+    ContextRelation,
+    MultimodalFusionResult,
+    get_meta_parsing_integration,
+)
 
 __all__ = [
     # 元解析器
@@ -35,4 +47,14 @@ __all__ = [
     "DataUnderstanding", "SchemaInference",
     # 编排器
     "ParsingOrchestrator",
+    # 深度集成
+    "MetaParsingIntegration",
+    "SemanticAnalysisLevel",
+    "ContextRelationType",
+    "MultimodalDataType",
+    "ParsingOptimizationTrigger",
+    "SemanticFeature",
+    "ContextRelation",
+    "MultimodalFusionResult",
+    "get_meta_parsing_integration",
 ]

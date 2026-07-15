@@ -8,6 +8,7 @@ meta_decision/__init__.py - 元决策模块
 - DecisionOptimizer: 决策优化器
 - DecisionQualityAnalyzer: 决策质量分析器
 - MetaDecisionOrchestrator: 元决策编排器
+- MetaDecisionIntegration: 元决策模块深度集成控制器
 """
 from .decision_monitor import (
     DecisionMonitor, DecisionTrace, DecisionPhase, DecisionMetric,
@@ -22,6 +23,10 @@ from .quality_analyzer import (
     BiasDetector, BiasType,
 )
 from .orchestrator import MetaDecisionOrchestrator
+from .integration import (
+    MetaDecisionIntegration, DecisionOptimizationMode, DecisionQualityDimension,
+    DecisionFeedbackTrigger, DecisionStrategyType, get_meta_decision_integration,
+)
 
 __all__ = [
     # 决策监控
@@ -35,4 +40,7 @@ __all__ = [
     "BiasDetector", "BiasType",
     # 编排器
     "MetaDecisionOrchestrator",
+    # 深度集成
+    "MetaDecisionIntegration", "DecisionOptimizationMode", "DecisionQualityDimension",
+    "DecisionFeedbackTrigger", "DecisionStrategyType", "get_meta_decision_integration",
 ]

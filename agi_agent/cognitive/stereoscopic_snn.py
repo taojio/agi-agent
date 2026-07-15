@@ -34,11 +34,14 @@
 """
 
 import numpy as np
+import logging
 from typing import List, Dict, Tuple, Optional, Any, Set
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict, deque
 import time
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionType(Enum):
@@ -187,13 +190,13 @@ class StereoscopicSNN:
         self.total_processing_time = 0.0
         self.total_processed = 0
 
-        print(f"[OK] 立体SNN v3.0 初始化完成")
-        print(f"  - 感知通路: 6层, {sum(self.perceptual_layer_sizes.values())} 神经元")
-        print(f"  - 认知通路: 5层SNN({sum(self.cognitive_layer_sizes.values())}神经元) + 储备池(50节点)")
-        print(f"  - 交叉连接: {len(self.cross_connections)} 个 (稀疏度: {self.sparsity*100:.0f}%)")
-        print(f"  - 融合层: {self.fusion_neurons} 神经元")
-        print(f"  - 总神经元数: {self._get_total_neurons()}")
-        print(f"  - 海马循环连接: {len(self.hippocampus_recurrent_synapses)}")
+        logger.info(f"[OK] 立体SNN v3.0 初始化完成")
+        logger.info(f"  - 感知通路: 6层, {sum(self.perceptual_layer_sizes.values())} 神经元")
+        logger.info(f"  - 认知通路: 5层SNN({sum(self.cognitive_layer_sizes.values())}神经元) + 储备池(50节点)")
+        logger.info(f"  - 交叉连接: {len(self.cross_connections)} 个 (稀疏度: {self.sparsity*100:.0f}%)")
+        logger.info(f"  - 融合层: {self.fusion_neurons} 神经元")
+        logger.info(f"  - 总神经元数: {self._get_total_neurons()}")
+        logger.info(f"  - 海马循环连接: {len(self.hippocampus_recurrent_synapses)}")
 
     def _init_perceptual_path(self):
         from bio_auditory_snn import (
@@ -1311,7 +1314,7 @@ class StereoscopicSNN:
         for synapse in self.hippocampus_recurrent_synapses:
             synapse.weight = np.random.uniform(0.1, 0.35)
 
-        print("[OK] 立体SNN记忆已清除")
+        logger.info("[OK] 立体SNN记忆已清除")
 
     def get_ensemble_activity(self) -> Dict:
         result = {}
@@ -1389,11 +1392,12 @@ class StereoscopicSNN:
 
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("立体脉冲神经网络（Stereoscopic SNN）v3.0 测试")
-    print("=" * 60)
+    logging.basicConfig(level=logging.INFO)
+    logger.info("=" * 60)
+    logger.info("立体脉冲神经网络（Stereoscopic SNN）v3.0 测试")
+    logger.info("=" * 60)
 
-    print("\n初始化立体SNN v3.0...")
+    logger.info("初始化立体SNN v3.0...")
     stereo_snn = StereoscopicSNN({
         'num_channels': 128,
         'sample_rate': 44100,
@@ -1405,91 +1409,91 @@ if __name__ == "__main__":
     t = np.linspace(0, duration, int(sample_rate * duration))
     test_signal = np.sin(2 * np.pi * 440 * t) * 0.5
 
-    print(f"\n测试音频: {duration}秒, 440Hz正弦波")
+    logger.info(f"测试音频: {duration}秒, 440Hz正弦波")
 
-    print("\n开始立体SNN处理...")
+    logger.info("开始立体SNN处理...")
     results = stereo_snn.process_audio(test_signal)
 
-    print(f"\n处理完成！耗时: {results['processing_time_ms']:.2f}ms")
+    logger.info(f"处理完成！耗时: {results['processing_time_ms']:.2f}ms")
 
-    print("\n=== 感知通路输出 ===")
+    logger.info("=== 感知通路输出 ===")
     for layer, count in results['perceptual_path']['layers'].items():
-        print(f"  {layer}: {count} 脉冲")
-    print(f"  总计: {results['perceptual_path']['total_spikes']} 脉冲")
+        logger.info(f"  {layer}: {count} 脉冲")
+    logger.info(f"  总计: {results['perceptual_path']['total_spikes']} 脉冲")
 
-    print("\n=== 认知通路输出 ===")
-    print(f"  SNN脉冲: {results['cognitive_path']['snn_spikes']}")
-    print(f"  总计: {results['cognitive_path']['total_spikes']} 脉冲")
+    logger.info("=== 认知通路输出 ===")
+    logger.info(f"  SNN脉冲: {results['cognitive_path']['snn_spikes']}")
+    logger.info(f"  总计: {results['cognitive_path']['total_spikes']} 脉冲")
 
-    print("\n=== 交叉连接 ===")
+    logger.info("=== 交叉连接 ===")
     cc = results['cross_connections']
-    print(f"  总连接数: {cc['total']}")
-    print(f"  活跃连接: {cc['active']}")
-    print(f"  前馈传递: {cc['feedforward_count']} 次")
-    print(f"  反馈传递: {cc['feedback_count']} 次")
+    logger.info(f"  总连接数: {cc['total']}")
+    logger.info(f"  活跃连接: {cc['active']}")
+    logger.info(f"  前馈传递: {cc['feedforward_count']} 次")
+    logger.info(f"  反馈传递: {cc['feedback_count']} 次")
 
-    print("\n=== 融合层输出 ===")
+    logger.info("=== 融合层输出 ===")
     fusion = results['fusion']
-    print(f"  融合神经元: {fusion['fusion_neurons']}")
-    print(f"  活跃神经元: {fusion['active_neurons']}")
-    print(f"  平均活动度: {fusion['mean_activity']:.4f}")
-    print(f"  最大活动度: {fusion['max_activity']:.4f}")
+    logger.info(f"  融合神经元: {fusion['fusion_neurons']}")
+    logger.info(f"  活跃神经元: {fusion['active_neurons']}")
+    logger.info(f"  平均活动度: {fusion['mean_activity']:.4f}")
+    logger.info(f"  最大活动度: {fusion['max_activity']:.4f}")
 
-    print("\n=== 记忆系统 ===")
+    logger.info("=== 记忆系统 ===")
     memory = results['memory']
-    print(f"  短时工作记忆: {memory['working_memory_items']} 项")
-    print(f"  长时记忆: {memory['long_term_memory_items']} 项")
-    print(f"  活跃神经元集群: {memory['active_ensembles']}")
+    logger.info(f"  短时工作记忆: {memory['working_memory_items']} 项")
+    logger.info(f"  长时记忆: {memory['long_term_memory_items']} 项")
+    logger.info(f"  活跃神经元集群: {memory['active_ensembles']}")
 
-    print("\n=== 立体网络架构 ===")
+    logger.info("=== 立体网络架构 ===")
     arch = results['stereoscopic_state']
-    print(f"  架构类型: {arch['architecture']}")
-    print(f"  总神经元数: {arch['total_neurons']}")
-    print(f"  感知通路: {arch['perceptual_path']['name']} ({arch['perceptual_path']['total_neurons']}神经元)")
-    print(f"  认知通路: {arch['cognitive_path']['name']} ({arch['cognitive_path']['snn_neurons']}+{arch['cognitive_path']['reservoir_nodes']}节点)")
-    print(f"  海马循环连接: {arch['hippocampal_attractor']['recurrent_connections']}")
+    logger.info(f"  架构类型: {arch['architecture']}")
+    logger.info(f"  总神经元数: {arch['total_neurons']}")
+    logger.info(f"  感知通路: {arch['perceptual_path']['name']} ({arch['perceptual_path']['total_neurons']}神经元)")
+    logger.info(f"  认知通路: {arch['cognitive_path']['name']} ({arch['cognitive_path']['snn_neurons']}+{arch['cognitive_path']['reservoir_nodes']}节点)")
+    logger.info(f"  海马循环连接: {arch['hippocampal_attractor']['recurrent_connections']}")
 
-    print("\n=== 测试旋律学习 ===")
+    logger.info("=== 测试旋律学习 ===")
     stereo_snn.learn_melody("test_melody", test_signal)
     state = stereo_snn.get_network_state()
-    print(f"  记忆数: {state['memory_count']}")
-    print(f"  节奏模式: {state['rhythm_patterns']}")
-    print(f"  长时记忆项数: {state['state']['long_term_memory_count']}")
+    logger.info(f"  记忆数: {state['memory_count']}")
+    logger.info(f"  节奏模式: {state['rhythm_patterns']}")
+    logger.info(f"  长时记忆项数: {state['state']['long_term_memory_count']}")
 
-    print("\n=== 测试旋律回忆 ===")
+    logger.info("=== 测试旋律回忆 ===")
     recalled = stereo_snn.recall_melody(test_signal[:len(test_signal)//3])
-    print(f"  回忆脉冲数: {len(recalled)}")
+    logger.info(f"  回忆脉冲数: {len(recalled)}")
 
-    print("\n=== 测试节奏预测 ===")
+    logger.info("=== 测试节奏预测 ===")
     test_seq = [0.1, 0.3, 0.5, 0.7, 0.9]
     next_t = stereo_snn.predict_rhythm(test_seq)
-    print(f"  输入序列: {test_seq}")
-    print(f"  预测下一个事件: {next_t:.3f}" if next_t else "  无法预测")
+    logger.info(f"  输入序列: {test_seq}")
+    logger.info(f"  预测下一个事件: {next_t:.3f}" if next_t else "  无法预测")
 
-    print("\n=== 测试吸引子动力学 ===")
+    logger.info("=== 测试吸引子动力学 ===")
     partial = [10, 20, 30]
     completed = stereo_snn._attractor_dynamics(partial)
-    print(f"  部分模式: {partial}")
-    print(f"  补全模式: {len(completed)} 个神经元激活")
+    logger.info(f"  部分模式: {partial}")
+    logger.info(f"  补全模式: {len(completed)} 个神经元激活")
 
-    print("\n=== 测试突触统计 ===")
+    logger.info("=== 测试突触统计 ===")
     syn_stats = stereo_snn.get_synaptic_statistics()
-    print(f"  感知通路突触: {sum(len(v) for v in syn_stats['perceptual_synapses'].values())}")
-    print(f"  认知通路突触: {syn_stats['cognitive_synapses'].get('count', 0)}")
-    print(f"  海马循环突触: {syn_stats['hippocampal_recurrent'].get('count', 0)}")
+    logger.info(f"  感知通路突触: {sum(len(v) for v in syn_stats['perceptual_synapses'].values())}")
+    logger.info(f"  认知通路突触: {syn_stats['cognitive_synapses'].get('count', 0)}")
+    logger.info(f"  海马循环突触: {syn_stats['hippocampal_recurrent'].get('count', 0)}")
 
-    print("\n=== 测试神经元集群 ===")
+    logger.info("=== 测试神经元集群 ===")
     ensemble_stats = stereo_snn.get_ensemble_activity()
-    print(f"  集群数量: {len(ensemble_stats)}")
+    logger.info(f"  集群数量: {len(ensemble_stats)}")
     active_ensembles = sum(1 for e in ensemble_stats.values() if e['coherence_score'] > 0)
-    print(f"  活跃集群: {active_ensembles}")
+    logger.info(f"  活跃集群: {active_ensembles}")
 
-    print("\n=== 测试清除记忆 ===")
+    logger.info("=== 测试清除记忆 ===")
     stereo_snn.clear_memory()
     state = stereo_snn.get_network_state()
-    print(f"  清除后记忆数: {state['memory_count']}")
-    print(f"  清除后工作记忆: {state['state']['working_memory_count']}")
+    logger.info(f"  清除后记忆数: {state['memory_count']}")
+    logger.info(f"  清除后工作记忆: {state['state']['working_memory_count']}")
 
-    print("\n" + "=" * 60)
-    print("立体SNN v3.0 测试完成！")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("立体SNN v3.0 测试完成！")
+    logger.info("=" * 60)

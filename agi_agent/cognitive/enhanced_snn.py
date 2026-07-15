@@ -11,12 +11,15 @@
 """
 
 import numpy as np
+import logging
 from typing import List, Dict, Tuple, Optional, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict, deque
 import time
 import math
+
+logger = logging.getLogger(__name__)
 
 
 class NeuronType(Enum):
@@ -722,19 +725,19 @@ if __name__ == '__main__':
     }
     
     snn = EnhancedSNN(config)
-    print("增强版SNN初始化完成")
-    print(f"神经元数量: {snn.num_neurons}")
-    print(f"突触数量: {len(snn.synapses)}")
+    logger.info("增强版SNN初始化完成")
+    logger.info(f"神经元数量: {snn.num_neurons}")
+    logger.info(f"突触数量: {len(snn.synapses)}")
     
     reservoir = SelfOrganizingChaosReservoir({
         'num_nodes': 15,
         'chaos_factor': 0.6
     })
-    print(f"\n混沌储备池初始化完成")
-    print(f"节点数量: {len(reservoir.nodes)}")
+    logger.info(f"\n混沌储备池初始化完成")
+    logger.info(f"节点数量: {len(reservoir.nodes)}")
     
     processor = MusicSNNProcessor({
         'snn_config': config,
         'reservoir_config': {'num_nodes': 20}
     })
-    print(f"\n音乐SNN处理器初始化完成")
+    logger.info(f"\n音乐SNN处理器初始化完成")

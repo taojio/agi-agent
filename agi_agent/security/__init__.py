@@ -4,6 +4,26 @@ from .hard_boundary import HardBoundarySystem, BoundaryType, BoundaryRule
 from .risk_classifier import RiskClassifier, RiskLevel, RiskAction, RiskRule
 from .circuit_breaker import CircuitBreaker, BreakerState, TriggerCondition
 from .audit_trail import AuditTrail, AuditCategory, AuditEntry
+from .vulnerability_scanner import (
+    VulnerabilityScanner,
+    OWASPRuleLibrary,
+    VulnerabilityRule,
+    Vulnerability,
+    VulnerabilityType,
+    VulnerabilitySeverity,
+    ScanResult,
+    get_vulnerability_scanner,
+)
+from .malware_detector import (
+    MalwareDetector,
+    MalwareFeatureExtractor,
+    SignatureLibrary,
+    MalwareSignature,
+    DetectionResult,
+    MalwareType,
+    ThreatLevel,
+    get_malware_detector,
+)
 
 from .exceptions import (
     SecurityException,
@@ -68,6 +88,22 @@ __all__ = [
     "AuditTrail",
     "AuditCategory",
     "AuditEntry",
+    "VulnerabilityScanner",
+    "OWASPRuleLibrary",
+    "VulnerabilityRule",
+    "Vulnerability",
+    "VulnerabilityType",
+    "VulnerabilitySeverity",
+    "ScanResult",
+    "get_vulnerability_scanner",
+    "MalwareDetector",
+    "MalwareFeatureExtractor",
+    "SignatureLibrary",
+    "MalwareSignature",
+    "DetectionResult",
+    "MalwareType",
+    "ThreatLevel",
+    "get_malware_detector",
     "SecurityException",
     "AuthenticationException",
     "AuthorizationException",

@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agi-agent
+  labels:
+    app: agi-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agi-agent
+  template:
+    metadata:
+      labels:
+        app: agi-agent
+    spec:
+      containers:
+      - name: agi-agent
+        image: agi-agent:latest
+        ports:
+        - containerPort: 8090
+        env:
+        - name: DATA_DIR
+          value: /app/data
+        - name: PYTHONPATH
+          value: /app
+        - name: LOG_LEVEL
+          value: INFO
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: agi-agent-data
+      - name: logs-volume
+        emptyDir: {}

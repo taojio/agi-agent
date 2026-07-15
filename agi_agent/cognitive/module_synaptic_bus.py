@@ -25,10 +25,13 @@
 """
 
 import numpy as np
+import logging
 from typing import List, Dict, Tuple, Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import deque, defaultdict
+
+logger = logging.getLogger(__name__)
 
 
 class SynapseType(Enum):
@@ -211,9 +214,9 @@ class ModuleSynapticBus:
         self._define_module_topology()
         self._initialize_synapses()
         
-        print(f"[OK] ModuleSynapticBus 初始化完成")
-        print(f"  - 注册模块数: {len(self.modules)}")
-        print(f"  - 突触连接数: {len(self.synapses)}")
+        logger.info(f"[OK] ModuleSynapticBus 初始化完成")
+        logger.info(f"  - 注册模块数: {len(self.modules)}")
+        logger.info(f"  - 突触连接数: {len(self.synapses)}")
 
     def _define_module_topology(self):
         self.module_list = [
@@ -278,11 +281,11 @@ class ModuleSynapticBus:
 
     def register_module(self, module_id: str, interface: NeuralInterface):
         if module_id in self.modules:
-            print(f"[WARN] 模块 {module_id} 已注册")
+            logger.warning(f"[WARN] 模块 {module_id} 已注册")
             return False
         
         self.modules[module_id] = interface
-        print(f"[OK] 模块 {module_id} 注册成功")
+        logger.info(f"[OK] 模块 {module_id} 注册成功")
         return True
 
     def get_module(self, module_id: str) -> Optional[NeuralInterface]:

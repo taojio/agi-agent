@@ -14,6 +14,11 @@ from .experience_distiller import (
     ExperienceDistiller, PatternType, PatternStatus,
     Pattern, StrategyPrototype,
 )
+from .knowledge_refinement import (
+    KnowledgeExtractor, KnowledgeVersionManager, KnowledgeRefiner,
+    KnowledgeNode, KnowledgeRelation, KnowledgeVersion,
+    KnowledgeExtractionResult, KnowledgeType, KnowledgeFormat, VersionStatus,
+)
 
 __all__ = [
     "MetaLearningLayer", "KnowledgeGraph", "StructuredKnowledgeIngestor",
@@ -22,4 +27,8 @@ __all__ = [
     "LearningSample", "LearningUpdate", "DriftDetection",
     "ExperienceDistiller", "PatternType", "PatternStatus",
     "Pattern", "StrategyPrototype",
+    # 知识精炼模块
+    "KnowledgeExtractor", "KnowledgeVersionManager", "KnowledgeRefiner",
+    "KnowledgeNode", "KnowledgeRelation", "KnowledgeVersion",
+    "KnowledgeExtractionResult", "KnowledgeType", "KnowledgeFormat", "VersionStatus",
 ]

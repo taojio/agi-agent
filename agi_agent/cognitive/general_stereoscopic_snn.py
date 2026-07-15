@@ -34,11 +34,14 @@
 """
 
 import numpy as np
+import logging
 from typing import List, Dict, Tuple, Optional, Any, Set
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict, deque
 import time
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionType(Enum):
@@ -187,13 +190,13 @@ class GeneralStereoscopicSNN:
         self.total_processing_time = 0.0
         self.total_processed = 0
 
-        print(f"[OK] 通用立体SNN v3.0 初始化完成")
-        print(f"  - 感知通路: 6层, {sum(self.perceptual_layer_sizes.values())} 神经元")
-        print(f"  - 认知通路: 5层SNN({sum(self.cognitive_layer_sizes.values())}神经元) + 储备池(50节点)")
-        print(f"  - 交叉连接: {len(self.cross_connections)} 个 (稀疏度: {self.sparsity*100:.0f}%)")
-        print(f"  - 融合层: {self.fusion_neurons} 神经元")
-        print(f"  - 总神经元数: {self._get_total_neurons()}")
-        print(f"  - 海马循环连接: {len(self.hippocampus_recurrent_synapses)}")
+        logger.info(f"[OK] 通用立体SNN v3.0 初始化完成")
+        logger.info(f"  - 感知通路: 6层, {sum(self.perceptual_layer_sizes.values())} 神经元")
+        logger.info(f"  - 认知通路: 5层SNN({sum(self.cognitive_layer_sizes.values())}神经元) + 储备池(50节点)")
+        logger.info(f"  - 交叉连接: {len(self.cross_connections)} 个 (稀疏度: {self.sparsity*100:.0f}%)")
+        logger.info(f"  - 融合层: {self.fusion_neurons} 神经元")
+        logger.info(f"  - 总神经元数: {self._get_total_neurons()}")
+        logger.info(f"  - 海马循环连接: {len(self.hippocampus_recurrent_synapses)}")
 
     def _init_perceptual_path(self):
         from .hierarchical_snn import (
@@ -1212,7 +1215,7 @@ class GeneralStereoscopicSNN:
         for synapse in self.hippocampus_recurrent_synapses:
             synapse.weight = np.random.uniform(0.1, 0.35)
 
-        print("[OK] 通用立体SNN记忆已清除")
+        logger.info("[OK] 通用立体SNN记忆已清除")
 
     def get_ensemble_activity(self) -> Dict:
         result = {}

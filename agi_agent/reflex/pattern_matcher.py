@@ -1,7 +1,7 @@
 import numpy as np
 from collections import deque
 from .spiking_core import SpikingCore
-from utils.numpy_utils import cosine_similarity
+from ..utils.numpy_utils import cosine_similarity
 
 
 class PatternMatcher:

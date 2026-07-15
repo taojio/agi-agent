@@ -1,10 +1,22 @@
 import time
+import threading
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
 from .code_generator import CodeGenerator, CodeGenerationResult, GenerationContext, GenerationMode
 from .code_analyzer import CodeAnalyzer, CodeAnalysisResult, IssueSeverity
 from .dynamic_executor import DynamicExecutor, ExecutionContext, ExecutionResult, SandboxConfig
+from .cross_language_analyzer import CrossLanguageCodeAnalyzer
+from .self_modifying_sandbox import (
+    SelfModifyingSandbox, SandboxMode, ModificationRequest,
+    ModificationType, ApprovalStatus,
+)
+from .performance_detector import (
+    PerformanceDashboard, BottleneckType, SeverityLevel,
+)
+from .test_case_generator import (
+    AutomatedTestSuite, TestStrategy, TestResultStatus,
+)
 
 
 class MetaProgrammingTaskType(Enum):
@@ -14,6 +26,11 @@ class MetaProgrammingTaskType(Enum):
     GENERATE_AND_EXECUTE = "generate_and_execute"
     OPTIMIZE = "optimize"
     REFACTOR = "refactor"
+    CROSS_LANG_ANALYZE = "cross_lang_analyze"
+    SELF_MODIFY = "self_modify"
+    PERFORMANCE_ANALYSIS = "performance_analysis"
+    TEST_GENERATION = "test_generation"
+    SELF_IMPROVE = "self_improve"
 
 
 class MetaProgrammingTask:
@@ -48,26 +65,37 @@ class MetaProgrammingOrchestrator:
         self.code_generator = CodeGenerator()
         self.code_analyzer = CodeAnalyzer()
         self.dynamic_executor = DynamicExecutor()
+        self.cross_lang_analyzer = CrossLanguageCodeAnalyzer()
+        self.sandbox = SelfModifyingSandbox(mode=SandboxMode.ANALYSIS_ONLY)
+        self.performance_dashboard = PerformanceDashboard()
+        self.test_suite = AutomatedTestSuite()
         self.task_history: List[MetaProgrammingTask] = []
         self._active_tasks: Dict[str, MetaProgrammingTask] = {}
+        self._lock = threading.Lock()
 
     def execute_task(self, task: MetaProgrammingTask) -> Dict[str, Any]:
-        self._active_tasks[task.task_id] = task
+        with self._lock:
+            self._active_tasks[task.task_id] = task
         task.status = "running"
         
         try:
-            if task.task_type == MetaProgrammingTaskType.GENERATE:
-                result = self._execute_generate(task)
-            elif task.task_type == MetaProgrammingTaskType.ANALYZE:
-                result = self._execute_analyze(task)
-            elif task.task_type == MetaProgrammingTaskType.EXECUTE:
-                result = self._execute_execute(task)
-            elif task.task_type == MetaProgrammingTaskType.GENERATE_AND_EXECUTE:
-                result = self._execute_generate_and_execute(task)
-            elif task.task_type == MetaProgrammingTaskType.OPTIMIZE:
-                result = self._execute_optimize(task)
-            elif task.task_type == MetaProgrammingTaskType.REFACTOR:
-                result = self._execute_refactor(task)
+            task_map = {
+                MetaProgrammingTaskType.GENERATE: self._execute_generate,
+                MetaProgrammingTaskType.ANALYZE: self._execute_analyze,
+                MetaProgrammingTaskType.EXECUTE: self._execute_execute,
+                MetaProgrammingTaskType.GENERATE_AND_EXECUTE: self._execute_generate_and_execute,
+                MetaProgrammingTaskType.OPTIMIZE: self._execute_optimize,
+                MetaProgrammingTaskType.REFACTOR: self._execute_refactor,
+                MetaProgrammingTaskType.CROSS_LANG_ANALYZE: self._execute_cross_lang_analyze,
+                MetaProgrammingTaskType.SELF_MODIFY: self._execute_self_modify,
+                MetaProgrammingTaskType.PERFORMANCE_ANALYSIS: self._execute_performance_analysis,
+                MetaProgrammingTaskType.TEST_GENERATION: self._execute_test_generation,
+                MetaProgrammingTaskType.SELF_IMPROVE: self._execute_self_improve,
+            }
+            
+            handler = task_map.get(task.task_type)
+            if handler:
+                result = handler(task)
             else:
                 result = {"error": f"Unknown task type: {task.task_type}"}
             
@@ -79,7 +107,8 @@ class MetaProgrammingOrchestrator:
             task.status = "failed"
         
         task.completed_at = time.time()
-        self._active_tasks.pop(task.task_id, None)
+        with self._lock:
+            self._active_tasks.pop(task.task_id, None)
         self.task_history.append(task)
         
         return task.result
@@ -229,6 +258,199 @@ class MetaProgrammingOrchestrator:
             "is_valid": result.is_valid()
         }
 
+    def _execute_cross_lang_analyze(self, task: MetaProgrammingTask) -> Dict[str, Any]:
+        analysis = self.cross_lang_analyzer.analyze(task.code, filename=task.target)
+        
+        return {
+            "language": analysis.language.value,
+            "complexity": {
+                "cyclomatic_complexity": analysis.complexity.cyclomatic_complexity,
+                "cognitive_complexity": analysis.complexity.cognitive_complexity,
+                "nesting_depth": analysis.complexity.nesting_depth,
+            },
+            "quality": {
+                "score": analysis.quality_score,
+                "grade": analysis.quality_level.value,
+                "maintainability": 0.0,
+                "reliability": 0.0,
+            },
+            "issues": [
+                {"type": "code_issue", "severity": issue.severity, "description": issue.message}
+                for issue in analysis.issues
+            ],
+            "optimization_suggestions": [
+                {"priority": suggestion.priority.value, "category": suggestion.category, "description": suggestion.description}
+                for suggestion in analysis.optimization_suggestions
+            ],
+        }
+
+    def _execute_self_modify(self, task: MetaProgrammingTask) -> Dict[str, Any]:
+        target_path = task.context.get("target_path", task.target)
+        content = task.context.get("content", task.code)
+        modification_type = task.context.get("modification_type", "modify")
+        reason = task.context.get("reason", "self-improvement")
+        proposed_by = task.context.get("proposed_by", "system")
+        
+        type_map = {
+            "add": ModificationType.ADD,
+            "modify": ModificationType.MODIFY,
+            "delete": ModificationType.DELETE,
+            "rename": ModificationType.RENAME,
+        }
+        
+        mod_type = type_map.get(modification_type, ModificationType.MODIFY)
+        
+        request = ModificationRequest(
+            request_id=f"mod_{int(time.time() * 1000)}",
+            type=mod_type,
+            target_path=target_path,
+            content=content,
+            reason=reason,
+            proposed_by=proposed_by,
+        )
+        
+        request = self.sandbox.submit_modification(request)
+        
+        if self.sandbox.mode == SandboxMode.FULL_MODIFICATION:
+            request.approve()
+            success = self.sandbox.execute_modification(request)
+        else:
+            success = False
+        
+        return {
+            "request_id": request.request_id,
+            "type": modification_type,
+            "target_path": target_path,
+            "status": request.status.value,
+            "approved": request.status in (ApprovalStatus.APPROVED, ApprovalStatus.AUTO_APPROVED),
+            "executed": success,
+            "rollback_id": request.rollback_id,
+        }
+
+    def _execute_performance_analysis(self, task: MetaProgrammingTask) -> Dict[str, Any]:
+        action = task.context.get("action", "analyze")
+        
+        if action == "start":
+            self.performance_dashboard.start_monitoring()
+            return {"status": "monitoring_started"}
+        
+        if action == "stop":
+            self.performance_dashboard.stop_monitoring()
+            return {"status": "monitoring_stopped"}
+        
+        analysis = self.performance_dashboard.run_analysis()
+        
+        return {
+            "status": analysis["status"],
+            "current_metrics": analysis.get("current_metrics", {}),
+            "detections": analysis.get("detections", []),
+            "suggestions": analysis.get("suggestions", []),
+            "total_detections": analysis.get("total_detections", 0),
+        }
+
+    def _execute_test_generation(self, task: MetaProgrammingTask) -> Dict[str, Any]:
+        target_func = task.context.get("target_function")
+        strategies = task.context.get("strategies", ["boundary_value", "random_test"])
+        count_per_strategy = task.context.get("count_per_strategy", 5)
+        enable_coverage = task.context.get("enable_coverage", False)
+        
+        strategy_enums = []
+        for s in strategies:
+            try:
+                strategy_enums.append(TestStrategy[s.upper()])
+            except KeyError:
+                pass
+        
+        if not target_func:
+            return {"error": "target_function is required"}
+        
+        test_suite = self.test_suite.create_and_execute(
+            target_func,
+            strategy_enums,
+            count_per_strategy=count_per_strategy,
+            enable_coverage=enable_coverage
+        )
+        
+        summary = self.test_suite.get_test_summary(test_suite)
+        report = self.test_suite.generate_report(test_suite, format_type="text")
+        
+        return {
+            "suite_id": test_suite.suite_id,
+            "test_count": len(test_suite.test_cases),
+            "summary": summary,
+            "report": report,
+        }
+
+    def _execute_self_improve(self, task: MetaProgrammingTask) -> Dict[str, Any]:
+        target_code = task.code if task.code else task.context.get("target_code", "")
+        target_file = task.target or task.context.get("target_file", "")
+        
+        results = {
+            "phase": "self_improvement",
+            "steps": [],
+        }
+
+        step = {
+            "name": "cross_lang_analysis",
+            "status": "running"
+        }
+        try:
+            analysis_result = self._execute_cross_lang_analyze(task)
+            step["status"] = "completed"
+            step["result"] = analysis_result
+        except Exception as e:
+            step["status"] = "failed"
+            step["error"] = str(e)
+        results["steps"].append(step)
+
+        step = {
+            "name": "performance_analysis",
+            "status": "running"
+        }
+        try:
+            perf_task = MetaProgrammingTask(
+                task_type=MetaProgrammingTaskType.PERFORMANCE_ANALYSIS,
+                context={"action": "analyze"}
+            )
+            perf_result = self._execute_performance_analysis(perf_task)
+            step["status"] = "completed"
+            step["result"] = perf_result
+        except Exception as e:
+            step["status"] = "failed"
+            step["error"] = str(e)
+        results["steps"].append(step)
+
+        has_issues = any(
+            step.get("status") == "completed" and 
+            step.get("result", {}).get("issues")
+            for step in results["steps"]
+        )
+        
+        if has_issues:
+            step = {
+                "name": "optimization",
+                "status": "running"
+            }
+            try:
+                opt_task = MetaProgrammingTask(
+                    task_type=MetaProgrammingTaskType.OPTIMIZE,
+                    code=target_code,
+                    target=target_file
+                )
+                opt_result = self._execute_optimize(opt_task)
+                step["status"] = "completed"
+                step["result"] = opt_result
+            except Exception as e:
+                step["status"] = "failed"
+                step["error"] = str(e)
+            results["steps"].append(step)
+
+        results["overall_status"] = "completed" if all(
+            step.get("status") != "failed" for step in results["steps"]
+        ) else "partial"
+        
+        return results
+
     def generate_and_evaluate(self, target: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         task = MetaProgrammingTask(
             task_type=MetaProgrammingTaskType.GENERATE_AND_EXECUTE,
@@ -244,6 +466,77 @@ class MetaProgrammingOrchestrator:
             target=target
         )
         return self.execute_task(task)
+
+    def cross_lang_analyze(self, code: str, filename: str = "") -> Dict[str, Any]:
+        task = MetaProgrammingTask(
+            task_type=MetaProgrammingTaskType.CROSS_LANG_ANALYZE,
+            code=code,
+            target=filename
+        )
+        return self.execute_task(task)
+
+    def self_modify(self, target_path: str, content: str, modification_type: str = "modify",
+                    reason: str = "self-improvement") -> Dict[str, Any]:
+        task = MetaProgrammingTask(
+            task_type=MetaProgrammingTaskType.SELF_MODIFY,
+            target=target_path,
+            code=content,
+            context={
+                "target_path": target_path,
+                "content": content,
+                "modification_type": modification_type,
+                "reason": reason,
+            }
+        )
+        return self.execute_task(task)
+
+    def run_performance_analysis(self) -> Dict[str, Any]:
+        task = MetaProgrammingTask(
+            task_type=MetaProgrammingTaskType.PERFORMANCE_ANALYSIS,
+            context={"action": "analyze"}
+        )
+        return self.execute_task(task)
+
+    def generate_tests(self, target_func: Callable, strategies: List[str] = None,
+                       count_per_strategy: int = 5, enable_coverage: bool = False) -> Dict[str, Any]:
+        task = MetaProgrammingTask(
+            task_type=MetaProgrammingTaskType.TEST_GENERATION,
+            context={
+                "target_function": target_func,
+                "strategies": strategies or ["boundary_value", "random_test"],
+                "count_per_strategy": count_per_strategy,
+                "enable_coverage": enable_coverage,
+            }
+        )
+        return self.execute_task(task)
+
+    def run_self_improvement(self, code: str = "", target_file: str = "") -> Dict[str, Any]:
+        task = MetaProgrammingTask(
+            task_type=MetaProgrammingTaskType.SELF_IMPROVE,
+            code=code,
+            target=target_file,
+            context={
+                "target_code": code,
+                "target_file": target_file,
+            }
+        )
+        return self.execute_task(task)
+
+    def set_sandbox_mode(self, mode: str):
+        mode_map = {
+            "read_only": SandboxMode.READ_ONLY,
+            "analysis": SandboxMode.ANALYSIS_ONLY,
+            "simulation": SandboxMode.SIMULATION,
+            "limited": SandboxMode.LIMITED_MODIFICATION,
+            "full": SandboxMode.FULL_MODIFICATION,
+        }
+        self.sandbox.mode = mode_map.get(mode, SandboxMode.ANALYSIS_ONLY)
+
+    def start_performance_monitoring(self):
+        self.performance_dashboard.start_monitoring()
+
+    def stop_performance_monitoring(self):
+        self.performance_dashboard.stop_monitoring()
 
     def get_task_history(self) -> List[Dict[str, Any]]:
         return [task.to_dict() for task in self.task_history]
@@ -263,5 +556,7 @@ class MetaProgrammingOrchestrator:
             "code_analyzer": self.code_analyzer.get_analysis_stats(),
             "dynamic_executor": self.dynamic_executor.get_execution_stats(),
             "total_tasks": len(self.task_history),
-            "active_tasks": len(self._active_tasks)
+            "active_tasks": len(self._active_tasks),
+            "sandbox_mode": self.sandbox.mode.value,
+            "performance_monitoring": True,
         }

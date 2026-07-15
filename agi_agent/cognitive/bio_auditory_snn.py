@@ -20,12 +20,15 @@
 """
 
 import numpy as np
+import logging
 from typing import List, Dict, Tuple, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict
 import math
 import scipy.signal as sp_signal
+
+logger = logging.getLogger(__name__)
 
 
 class EncodingScheme(Enum):
@@ -1302,7 +1305,8 @@ class BioAuditorySNN:
 
 
 if __name__ == "__main__":
-    print("生物启发式听觉SNN初始化...")
+    logging.basicConfig(level=logging.INFO)
+    logger.info("生物启发式听觉SNN初始化...")
     
     snn = BioAuditorySNN({
         'num_channels': 64,
@@ -1310,32 +1314,28 @@ if __name__ == "__main__":
         'encoding': EncodingScheme.TTFS
     })
     
-    print(f"网络状态: {snn.get_network_state()}")
+    logger.info(f"网络状态: {snn.get_network_state()}")
     
-    # 生成测试音频信号（1秒440Hz正弦波）
     duration = 1.0
     t = np.linspace(0, duration, int(snn.sample_rate * duration))
     test_signal = np.sin(2 * np.pi * 440 * t) * 0.5
     
-    # 测试处理流程
-    print("\n测试音频处理流程...")
+    logger.info("测试音频处理流程...")
     results = snn.process_audio(test_signal)
     
     for layer, spikes in results.items():
-        print(f"  {layer}: {len(spikes)} 个脉冲")
+        logger.info(f"  {layer}: {len(spikes)} 个脉冲")
     
-    # 测试学习功能
-    print("\n测试旋律学习功能...")
+    logger.info("测试旋律学习功能...")
     snn.learn_melody("test_melody", test_signal)
-    print(f"学习后网络状态: {snn.get_network_state()}")
+    logger.info(f"学习后网络状态: {snn.get_network_state()}")
     
-    # 测试回忆功能
-    print("\n测试旋律回忆功能...")
+    logger.info("测试旋律回忆功能...")
     partial_signal = test_signal[:int(snn.sample_rate * 0.3)]
     recalled = snn.recall_melody(partial_signal)
     if recalled:
-        print(f"  成功回忆到 {len(recalled)} 个脉冲")
+        logger.info(f"  成功回忆到 {len(recalled)} 个脉冲")
     else:
-        print("  未找到匹配的记忆")
+        logger.info("  未找到匹配的记忆")
     
-    print("\n生物启发式听觉SNN测试完成！")
+    logger.info("生物启发式听觉SNN测试完成！")

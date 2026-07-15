@@ -192,7 +192,7 @@ class CheckpointManager:
             return checkpoint_id
 
         except Exception as e:
-            print(f"[CheckpointManager] Save failed: {e}")
+            logginglog.error(f"[CheckpointManager] Save failed: {e}")
             if os.path.exists(checkpoint_dir):
                 shutil.rmtree(checkpoint_dir, ignore_errors=True)
             return None
@@ -376,7 +376,7 @@ class CheckpointManager:
             return result
 
         except Exception as e:
-            print(f"[CheckpointManager] Load failed: {e}")
+            logging.getLogger("agi_agent").error(f"[CheckpointManager] Load failed: {e}")
             return None
 
     def verify_checkpoint(self, checkpoint_id: str) -> bool:

@@ -3,14 +3,15 @@ import torch
 import time
 import sys
 import os
-from typing import Dict, Any, Optional, List
+import logging  
+from typing import Dict, Any, Optional, List, Callable  
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agi_agent.config.settings import DEVICE, EVOLVE_TRIGGER_STEP, SAVE_INTERVAL, EVAL_INTERVAL
 from agi_agent.utils.metrics import calc_free_energy, calc_entropy, calc_kl_divergence, calc_confidence, calc_novelty, calc_convergence_speed
 from agi_agent.perception import GrowingAutoEncoder, MultimodalFusion
-from agi_agent.cognitive import CognitiveInferenceLayer, DualSystemCognition, SNNEnhancer, CausalReasoningEngine, UnifiedCognitiveOrchestrator, ArchitectureMutator, SelfModel, GeneralStereoscopicSNN, EnhancedSNN, ModuleSynapticBus, INTERFACE_MAP
+from agi_agent.cognitive import CognitiveInferenceLayer, DualSystemCognition, SNNEnhancer, CausalReasoningEngine, UnifiedCognitiveOrchestrator, ArchitectureMutator, SelfModel, GeneralStereoscopicSNN, EnhancedSNN, ModuleSynapticBus, INTERFACE_MAP, SpikingGrowthNetwork, NetworkDimensions
 from agi_agent.learning import MetaLearningLayer, KnowledgeGraph, StructuredKnowledgeIngestor
 from agi_agent.evolution import EvolutionEngine, MetaSkillGenerator, DualLoopEvolution, EvolutionLevel, QuadLevelEvolution
 from agi_agent.execution import ActionExecutionLayer
@@ -48,9 +49,49 @@ from agi_agent.meta_evolution import EvolutionOrchestrator
 from agi_agent.orchestration import AutomationLinkageEngine, create_default_linkage_rules
 from agi_agent.training import TrainingRegime, TrainingState
 
+# 原子任务清单模块（T001-T047）
+from agi_agent.infrastructure import (
+    ResourceInspectionTask, AnomalyRecoveryTask, InferenceLoadBalancer,
+    DistributedNodeScheduler, SensorInitializer, PeripheralDataReader,
+    MotionDriverDispatcher, HardwareFaultDetector, IPCBus, NetworkLinkManager,
+    MessageQueueDispatcher, EncryptedTransport,
+)
+from agi_agent.vector_db import EmbeddingEncoder, VectorStoreWriter, SimilaritySearch, VectorIndexMaintenance
+from agi_agent.observability import FullChainLogger, MetricsReporter, ExceptionCapture, LogArchive
+from agi_agent.config_runtime import ConfigLoader, ConfigHotReloader, ConfigValidator, ConfigBackup
+from agi_agent.cache import ShortTermCacheWriter, CacheReader, CacheEviction, CacheSync
+from agi_agent.perception import (
+    UserTextReceiver, DocumentParser, OCRExtractor, TextNormalizer, TranslationAligner,
+    VideoFrameDecoder, ObjectDetector, SegmentationLocator, ImageCaptionGenerator,
+    AudioCaptureDenoiser, ASRTranscriber, VoiceprintEmotionRecognizer,
+    MultimodalTimeAligner, PerceptionStructPackager, InvalidModalityFilter,
+)
+from agi_agent.working_memory import (
+    DialogContextWriter, ContextWindowTruncator, TaskStateSaver, ShortTermMemoryCleaner,
+    WorkingMemoryBundle,
+)
+
 
 class SelfEvolvingAGI:
-    def __init__(self, input_dim=None, config_path=None):
+    """
+    自进化AGI智能体核心类
+    
+    集成感知、认知、学习、进化、决策、执行、记忆、安全等全栈模块，
+    实现元认知、元学习、自进化的完整智能闭环。
+    
+    Attributes:
+        input_dim: 输入特征维度
+        train_step: 当前训练步数
+        running: 智能体运行状态
+        perception: 感知编码器
+        cognitive: 认知推理层
+        meta_learn: 元学习层
+        meta_cog: 元认知层
+        homeostasis: 稳态引擎
+        evolve_engine: 进化引擎
+    """
+    
+    def __init__(self, input_dim: Optional[int] = None, config_path: Optional[str] = None):
         from agi_agent.core import get_adaptive_config
         self.adaptive_config = get_adaptive_config()
         
@@ -61,7 +102,7 @@ class SelfEvolvingAGI:
         self.config_path = config_path
 
         self.perception = GrowingAutoEncoder(input_dim=input_dim).to(DEVICE)
-        self.multimodal = MultimodalFusion({"primary": self.perception.get_feature_dim()}, output_dim=self.perception.get_feature_dim())
+        self.multimodal = EnhancedMultimodalFusion({"primary": self.perception.get_feature_dim()}, output_dim=self.perception.get_feature_dim())
         self.cognitive = CognitiveInferenceLayer(feat_dim=self.perception.get_feature_dim())
         self.dual_cognition = DualSystemCognition(feat_dim=self.perception.get_feature_dim())
         self.snn_enhancer = SNNEnhancer(feature_dim=self.perception.get_feature_dim())
@@ -106,20 +147,8 @@ class SelfEvolvingAGI:
             boundaries={"safety": "high", "resource_usage": "medium"}
         )
 
-        self.orchestrator = UnifiedCognitiveOrchestrator(
-            perception=self.perception,
-            cognition=self.cognitive,
-            dual_cognition=self.dual_cognition,
-            snn_enhancer=self.snn_enhancer,
-            causal_reasoner=self.causal_reasoner,
-            meta_cog=self.meta_cog,
-            homeostasis=self.homeostasis,
-            execution=self.execution,
-            knowledge_graph=self.knowledge_graph,
-            self_model=self.self_model
-        )
-        self.architecture_mutator = ArchitectureMutator(self.orchestrator)
-        self.knowledge_ingestor = StructuredKnowledgeIngestor(self.knowledge_graph, self.causal_reasoner)
+        self.architecture_mutator = None
+        self.knowledge_ingestor = None
 
         self.persistence = PersistenceManager()
         self.safety_monitor = SafetyMonitor()
@@ -187,6 +216,35 @@ class SelfEvolvingAGI:
         
         self.stereoscopic_snn = GeneralStereoscopicSNN(config={"feature_dim": self.perception.get_feature_dim(), "num_channels": self.perception.get_feature_dim()})
         self.enhanced_snn = EnhancedSNN(config={"num_neurons": 128, "num_layers": 3, "neurons_per_layer": [64, 32, self.perception.get_feature_dim()]})
+        self.growth_snn = SpikingGrowthNetwork(
+            dimensions=NetworkDimensions(
+                num_neurons=100,
+                num_synapses=500,
+                input_size=self.perception.get_feature_dim(),
+                output_size=self.perception.get_feature_dim(),
+                num_layers=3,
+            )
+        )
+        logging.getLogger("agi_agent").info(f"[OK] SpikingGrowthNetwork 初始化完成")
+        logging.getLogger("agi_agent").info(f"  - 神经元数量: {len(self.growth_snn.neurons)}")
+        logging.getLogger("agi_agent").info(f"  - 突触数量: {len(self.growth_snn.synapses)}")
+        logging.getLogger("agi_agent").info(f"  - 输入/输出维度: {self.growth_snn.dimensions.input_size}")
+
+        self.orchestrator = UnifiedCognitiveOrchestrator(
+            perception=self.perception,
+            cognition=self.cognitive,
+            dual_cognition=self.dual_cognition,
+            snn_enhancer=self.snn_enhancer,
+            causal_reasoner=self.causal_reasoner,
+            meta_cog=self.meta_cog,
+            homeostasis=self.homeostasis,
+            execution=self.execution,
+            knowledge_graph=self.knowledge_graph,
+            self_model=self.self_model,
+            growth_snn=self.growth_snn
+        )
+        self.architecture_mutator = ArchitectureMutator(self.orchestrator)
+        self.knowledge_ingestor = StructuredKnowledgeIngestor(self.knowledge_graph, self.causal_reasoner)
 
         self.hard_boundary = HardBoundarySystem()
         self.risk_classifier = RiskClassifier()
@@ -229,19 +287,20 @@ class SelfEvolvingAGI:
         self._init_world_model_decision_integration()
         self._init_automated_improvement_loop()
         self._init_training_regime()
+        self._init_atomic_task_modules()
 
     def _init_world_model_decision_integration(self):
         self.decision_engine.set_world_model_bridge(self.world_model_bridge)
-        print(f"[OK] WorldModelDecisionBridge 集成完成")
-        print(f"  - 决策引擎已连接世界模型")
-        print(f"  - 特征维度: {self.perception.get_feature_dim()}")
+        logging.getLogger("agi_agent").info(f"[OK] WorldModelDecisionBridge 集成完成")
+        logging.getLogger("agi_agent").info(f"  - 决策引擎已连接世界模型")
+        logging.getLogger("agi_agent").info(f"  - 特征维度: {self.perception.get_feature_dim()}")
 
     def _init_automated_improvement_loop(self):
         self.automated_improvement_loop.set_agent_ref(self)
         self.automated_improvement_loop.bootstrap_improver = self.bootstrap_improver
-        print(f"[OK] AutomatedSelfImprovementLoop 初始化完成")
-        print(f"  - 自动改进间隔: 100 steps")
-        print(f"  - 性能阈值监控已启用")
+        logging.getLogger("agi_agent").info(f"[OK] AutomatedSelfImprovementLoop 初始化完成")
+        logging.getLogger("agi_agent").info(f"  - 自动改进间隔: 100 steps")
+        logging.getLogger("agi_agent").info(f"  - 性能阈值监控已启用")
 
     def _init_training_regime(self):
         self.training_regime = TrainingRegime({
@@ -256,12 +315,182 @@ class SelfEvolvingAGI:
         })
         self.training_regime.set_agent_ref(self)
         self.training_regime.start_training()
-        print(f"[OK] 训练制度 (TrainingRegime) 初始化完成")
-        print(f"  - 5阶段训练流程已加载")
-        print(f"  - 检查点保存目录: ./agent_checkpoints")
-        print(f"  - 评估指标体系: 3层12项指标")
-        print(f"  - 监控预警: 3级预警机制已启用")
-        print(f"  - 训练状态: 已启动")
+        logging.getLogger("agi_agent").info(f"[OK] 训练制度 (TrainingRegime) 初始化完成")
+        logging.getLogger("agi_agent").info(f"  - 5阶段训练流程已加载")
+        logging.getLogger("agi_agent").info(f"  - 检查点保存目录: ./agent_checkpoints")
+        logging.getLogger("agi_agent").info(f"  - 评估指标体系: 3层12项指标")
+        logging.getLogger("agi_agent").info(f"  - 监控预警: 3级预警机制已启用")
+        logging.getLogger("agi_agent").info(f"  - 训练状态: 已启动")
+
+    def _init_atomic_task_modules(self):
+        """初始化原子任务清单全部模块（T001-T047）并完成关键联动。
+
+        所有模块按子模块分组实例化，关键协作关系：
+        - ResourceInspectionTask → InferenceLoadBalancer（算力数据供给）
+        - VectorStoreWriter → SimilaritySearch（共享向量存储）
+        - ShortTermCacheWriter/Reader/Eviction（共享缓存存储）
+        - DialogContextWriter + TaskStateSaver → ShortTermMemoryCleaner（清理联动）
+        - ExceptionCapture 全局异常捕获
+        - orchestrator 注入 observability/infrastructure/working_memory 运行时服务
+        任意组失败不影响其他组与主流程。
+        """
+        import logging
+        _log = logging.getLogger("agi_agent.atomic")
+        self.atomic_modules = {}
+
+        # ---- 一、底层算力&硬件支撑模块（T001-T012）----
+        try:
+            self.resource_inspector = ResourceInspectionTask()
+            self.anomaly_recovery = AnomalyRecoveryTask()
+            self.load_balancer = InferenceLoadBalancer()
+            # 松耦合联动：挂载资源巡检器引用，供负载均衡按需读取算力数据
+            try:
+                self.load_balancer.resource_inspector = self.resource_inspector
+            except Exception:
+                pass
+            self.cluster_scheduler = DistributedNodeScheduler()
+            self.sensor_initializer = SensorInitializer()
+            self.peripheral_reader = PeripheralDataReader()
+            self.motion_dispatcher = MotionDriverDispatcher()
+            self.hardware_fault_detector = HardwareFaultDetector()
+            self.ipc_bus = IPCBus()
+            self.network_link_manager = NetworkLinkManager()
+            self.message_queue_dispatcher = MessageQueueDispatcher()
+            self.encrypted_transport = EncryptedTransport()
+            self.atomic_modules["infrastructure"] = [
+                self.resource_inspector, self.anomaly_recovery, self.load_balancer,
+                self.cluster_scheduler, self.sensor_initializer, self.peripheral_reader,
+                self.motion_dispatcher, self.hardware_fault_detector, self.ipc_bus,
+                self.network_link_manager, self.message_queue_dispatcher, self.encrypted_transport,
+            ]
+            _log.info("基础设施模块 T001-T012 初始化完成")
+        except Exception as e:
+            _log.warning(f"基础设施模块初始化部分失败: {e}")
+
+        # ---- 二、基础基座支撑模块（T013-T028）----
+        try:
+            self.embedding_encoder = EmbeddingEncoder()
+            self.vector_store_writer = VectorStoreWriter()
+            self.similarity_search = SimilaritySearch(store=self.vector_store_writer)
+            self.vector_index_maintenance = VectorIndexMaintenance(store=self.vector_store_writer)
+
+            self.full_chain_logger = FullChainLogger()
+            self.metrics_reporter = MetricsReporter()
+            self.exception_capture = ExceptionCapture()
+            self.log_archive = LogArchive()
+
+            self.config_loader = ConfigLoader()
+            self.config_hot_reloader = ConfigHotReloader()
+            self.config_validator = ConfigValidator()
+            self.config_backup = ConfigBackup()
+
+            self.short_term_cache_writer = ShortTermCacheWriter()
+            self.cache_reader = CacheReader(store=self.short_term_cache_writer._store)
+            self.cache_eviction = CacheEviction(store=self.short_term_cache_writer._store)
+            self.cache_sync = CacheSync()
+
+            self.atomic_modules["base_support"] = [
+                self.embedding_encoder, self.vector_store_writer, self.similarity_search,
+                self.vector_index_maintenance, self.full_chain_logger, self.metrics_reporter,
+                self.exception_capture, self.log_archive, self.config_loader,
+                self.config_hot_reloader, self.config_validator, self.config_backup,
+                self.short_term_cache_writer, self.cache_reader, self.cache_eviction, self.cache_sync,
+            ]
+            _log.info("基座支撑模块 T013-T028 初始化完成")
+        except Exception as e:
+            _log.warning(f"基座支撑模块初始化部分失败: {e}")
+
+        # ---- 三、感知输入模块（T029-T043）----
+        try:
+            self.user_text_receiver = UserTextReceiver()
+            self.document_parser = DocumentParser()
+            self.ocr_extractor = OCRExtractor()
+            self.text_normalizer = TextNormalizer()
+            self.translation_aligner = TranslationAligner()
+
+            self.video_frame_decoder = VideoFrameDecoder()
+            self.object_detector = ObjectDetector()
+            self.segmentation_locator = SegmentationLocator()
+            self.image_caption_generator = ImageCaptionGenerator()
+
+            self.audio_capture_denoiser = AudioCaptureDenoiser()
+            self.asr_transcriber = ASRTranscriber()
+            self.voiceprint_emotion_recognizer = VoiceprintEmotionRecognizer()
+
+            self.multimodal_time_aligner = MultimodalTimeAligner()
+            self.perception_struct_packager = PerceptionStructPackager()
+            self.invalid_modality_filter = InvalidModalityFilter()
+
+            self.atomic_modules["perception"] = [
+                self.user_text_receiver, self.document_parser, self.ocr_extractor,
+                self.text_normalizer, self.translation_aligner, self.video_frame_decoder,
+                self.object_detector, self.segmentation_locator, self.image_caption_generator,
+                self.audio_capture_denoiser, self.asr_transcriber, self.voiceprint_emotion_recognizer,
+                self.multimodal_time_aligner, self.perception_struct_packager, self.invalid_modality_filter,
+            ]
+            _log.info("感知输入模块 T029-T043 初始化完成")
+        except Exception as e:
+            _log.warning(f"感知输入模块初始化部分失败: {e}")
+
+        # ---- 四、瞬时短时记忆模块（T044-T047）----
+        try:
+            self.working_memory_bundle = WorkingMemoryBundle.create_default()
+            self.dialog_context_writer = self.working_memory_bundle.context_writer
+            self.context_window_truncator = self.working_memory_bundle.truncator
+            self.task_state_saver = self.working_memory_bundle.task_state_saver
+            self.short_term_memory_cleaner = self.working_memory_bundle.cleaner
+
+            self.atomic_modules["working_memory"] = [
+                self.dialog_context_writer, self.context_window_truncator,
+                self.task_state_saver, self.short_term_memory_cleaner,
+            ]
+            _log.info("瞬时短时记忆模块 T044-T047 初始化完成")
+        except Exception as e:
+            _log.warning(f"瞬时短时记忆模块初始化部分失败: {e}")
+
+        # ---- 向 orchestrator 注入运行时服务（可选，不破坏现有流程）----
+        try:
+            if getattr(self, "orchestrator", None) is not None:
+                self.orchestrator.set_runtime_services(
+                    observability={
+                        "chain_logger": getattr(self, "full_chain_logger", None),
+                        "metrics": getattr(self, "metrics_reporter", None),
+                        "exception": getattr(self, "exception_capture", None),
+                    },
+                    infrastructure={
+                        "resource_inspector": getattr(self, "resource_inspector", None),
+                        "load_balancer": getattr(self, "load_balancer", None),
+                    },
+                    working_memory=getattr(self, "working_memory_bundle", None),
+                )
+        except Exception as e:
+            _log.warning(f"orchestrator 运行时服务注入失败: {e}")           
+        logging.getLogger("agi_agent").info(f"[OK] 原子任务模块 T001-T047 初始化完成")
+        logging.getLogger("agi_agent").info(f"  - 模块组数: {len(self.atomic_modules)}")
+        logging.getLogger("agi_agent").info(f"  - 模块总数: {sum(len(v) for v in self.atomic_modules.values())}")
+
+        # 调用各模块 initialize() 使其进入 READY 状态（失败不阻塞）
+        for group, modules in self.atomic_modules.items():
+            for m in modules:
+                try:
+                    if hasattr(m, "initialize") and not m.is_ready:
+                        m.initialize()
+                except Exception:
+                    pass
+
+    def get_atomic_modules_status(self) -> dict:
+        """获取全部原子任务模块的状态摘要。"""
+        status = {}
+        for group, modules in getattr(self, "atomic_modules", {}).items():
+            status[group] = []
+            for m in modules:
+                try:
+                    name = getattr(m, "name", m.__class__.__name__)
+                    healthy = m.health_check() if hasattr(m, "health_check") else True
+                except Exception:
+                    healthy = False
+                status[group].append({"name": name, "healthy": healthy})
+        return status
 
     def _extract_training_metrics(self, step_metrics: dict, step_time: float) -> dict:
         kg_summary = step_metrics.get("knowledge_graph", {})
@@ -319,9 +548,9 @@ class SelfEvolvingAGI:
             interface = interface_class()
             self.synaptic_bus.register_module(module_id, interface)
         
-        print(f"[OK] ModuleSynapticBus 集成完成")
-        print(f"  - 注册模块: {list(INTERFACE_MAP.keys())}")
-        print(f"  - 突触连接: {len(self.synaptic_bus.synapses)}")
+        logging.getLogger("agi_agent").info(f"[OK] ModuleSynapticBus 集成完成")
+        logging.getLogger("agi_agent").info(f"  - 注册模块: {list(INTERFACE_MAP.keys())}")
+        logging.getLogger("agi_agent").info(f"  - 突触连接: {len(self.synaptic_bus.synapses)}")
 
     def _update_synaptic_bus(self):
         module_states = {
@@ -413,7 +642,16 @@ class SelfEvolvingAGI:
             import warnings
             warnings.warn(f"Safety boundary violation during init: {boundary_result.get('blocked_by', [])}")
 
-    def step(self, raw_obs):
+    def step(self, raw_obs: Any) -> Dict[str, Any]:
+        """
+        执行单个推理步骤
+        
+        Args:
+            raw_obs: 原始观测输入，可以是数组、张量或字典
+        
+        Returns:
+            包含动作、置信度、自由能等的结果字典
+        """
         if not self.running:
             return {"error": "Agent stopped"}
 
@@ -1170,6 +1408,7 @@ class SelfEvolvingAGI:
                 "existence_awareness": self.self_model.self_referential_knowledge.get("existence_awareness", 0.5),
                 "temporal_continuity": self.self_model.self_referential_knowledge.get("temporal_continuity", 0.5)
             },
+            "growth_snn": orchestrator_result.get('growth_snn_stats', {}),
             "automation_linkage": self.linkage_engine.get_stats()
         }
 
@@ -1312,7 +1551,12 @@ class SelfEvolvingAGI:
                 source_agent="main"
             )
 
-    def save_checkpoint(self):
+    def save_checkpoint(self) -> None:
+        """
+        保存当前状态检查点
+        
+        保存感知模型、智能体状态、知识图谱到持久化存储，并创建任务检查点。
+        """
         self.persistence.save_model(self.perception, "perception", self.train_step)
         self.persistence.save_state({
             "step": self.train_step,
@@ -1332,7 +1576,6 @@ class SelfEvolvingAGI:
             }
         )
 
-        # 训练制度：保存智能体本体完整检查点
         from agi_agent.training import CheckpointType
         self.training_regime._save_training_checkpoint(
             self.train_step,
@@ -1347,7 +1590,16 @@ class SelfEvolvingAGI:
     def get_training_summary(self) -> dict:
         return self.training_regime.get_training_summary()
 
-    def load_checkpoint(self, step=None):
+    def load_checkpoint(self, step: Optional[int] = None) -> bool:
+        """
+        从检查点加载状态
+        
+        Args:
+            step: 指定要加载的步数，为None时加载最新检查点
+        
+        Returns:
+            是否成功加载
+        """
         loaded = self.persistence.load_model(self.perception, "perception", step)
         if loaded:
             state = self.persistence.load_state("agent_state")
@@ -1396,8 +1648,7 @@ class SelfEvolvingAGI:
             feat_dim = self.perception.get_feature_dim()
 
             self._migrate_weights('perception', old_states, old_feat_dim, feat_dim)
-
-            self.multimodal = MultimodalFusion({"primary": feat_dim}, output_dim=feat_dim)
+            self.multimodal = EnhancedMultimodalFusion({"primary": feat_dim}, output_dim=feat_dim)
             self.cognitive = CognitiveInferenceLayer(feat_dim=feat_dim)
             self.dual_cognition = DualSystemCognition(feat_dim=feat_dim)
             self.snn_enhancer = SNNEnhancer(feature_dim=feat_dim)
@@ -1506,7 +1757,7 @@ class SelfEvolvingAGI:
                 self.perception = GrowingAutoEncoder(input_dim=new_dim).to(DEVICE)
                 feat_dim = self.perception.get_feature_dim()
                 
-                self.multimodal = MultimodalFusion({"primary": feat_dim}, output_dim=feat_dim)
+                self.multimodal = EnhancedMultimodalFusion({"primary": feat_dim}, output_dim=feat_dim)
                 self.cognitive = CognitiveInferenceLayer(feat_dim=feat_dim)
                 self.dual_cognition = DualSystemCognition(feat_dim=feat_dim)
                 self.snn_enhancer = SNNEnhancer(feature_dim=feat_dim)
@@ -1748,7 +1999,17 @@ class SelfEvolvingAGI:
                 "agent_metrics"
             )
 
-    def run(self, steps=1000, env_generator=None):
+    def run(self, steps: int = 1000, env_generator: Optional[Callable[[], Any]] = None) -> Dict[str, Any]:
+        """
+        运行智能体主循环
+        
+        Args:
+            steps: 运行步数，默认为1000
+            env_generator: 环境观测生成器函数，返回观测数据
+        
+        Returns:
+            运行结束后的综合报告字典
+        """
         for _ in range(steps):
             if not self.running:
                 break
@@ -1769,36 +2030,38 @@ class SelfEvolvingAGI:
 
 if __name__ == "__main__":
     agi_agent = SelfEvolvingAGI(input_dim=16)
-    print("===== Self-Evolving AGI Agent Started =====")
-    print("Core capabilities: Meta-cognition | Meta-learning | Unsupervised adaptation")
-    print("                  Autonomous thinking | Self-evolution | Autonomous action")
-    print("                  Memory System | SOUL Protocol | Multi-Agent Collaboration")
-    print("                  Task Engine | Dual-Loop Evolution | Quad-Level Evolution")
-    print("                  Three-Layer Mental Architecture | Safety Control System")
+    logging.getLogger("agi_agent").info("===== Self-Evolving AGI Agent Started =====")
+    logging.getLogger("agi_agent").info("Core capabilities: Meta-cognition | Meta-learning | Unsupervised adaptation")
+    logging.getLogger("agi_agent").info("                  Autonomous thinking | Self-evolution | Autonomous action")
+    logging.getLogger("agi_agent").info("                  Memory System | SOUL Protocol | Multi-Agent Collaboration")
+    logging.getLogger("agi_agent").info("                  Task Engine | Dual-Loop Evolution | Quad-Level Evolution")
+    logging.getLogger("agi_agent").info("                  Three-Layer Mental Architecture | Safety Control System")
 
     report = agi_agent.run(steps=200)
-    print("\n===== Run Report =====")
-    print(f"Final Step: {report['agent_info']['step']}")
-    print(f"Performance Score: {report['performance']['performance_score']['total_score']:.4f}")
-    print(f"Free Energy: {report['cognitive_metrics']['cognitive']['free_energy']:.4f}")
-    print(f"Confidence: {report['cognitive_metrics']['cognitive']['confidence']:.4f}")
-    print(f"Knowledge Rules: {report['knowledge']['count']}")
-    print(f"Safety Risk Level: {report['safety']['risk_level']}")
-    print(f"Compliance Rate: {report['compliance']['compliance_rate']:.2f}")
-    print(f"Memory Stats: {report['memory_system']}")
-    print(f"Soul: {report['soul']['name']} v{report['soul']['version']}")
-    print(f"Evolution Stats: {report['dual_loop_evolution']}")
-    print(f"\nThree-Layer Architecture Stats:")
-    print(f"  Reflex Layer: {report['three_layer_architecture']['reflex']}")
-    print(f"  Deliberative Layer: {report['three_layer_architecture']['deliberative']}")
-    print(f"  Meta-Cognitive Layer: {report['three_layer_architecture']['meta_cognitive']}")
-    print(f"\nAutonomous Action Stats: {report['autonomous_action']}")
-    print(f"\nSecurity System:")
-    print(f"  Hard Boundary: {report['security_system']['hard_boundary']}")
-    print(f"  Circuit Breaker: {report['security_system']['circuit_breaker']}")
-    print(f"\nMeta-Modules Overview:")
-    print(f"  Meta-Programming: tasks={report['meta_programming']['total_tasks']}")
-    print(f"  Meta-Learning: tasks={report['meta_learning']['registered_tasks']}")
-    print(f"  Meta-Decision: active={report['meta_decision']['active_decisions']}")
-    print(f"  Meta-Parsing: pipelines={len(report['meta_parsing']['pipelines'])}")
-    print(f"  Meta-Evolution: tasks={report['meta_evolution']['total_tasks']}")
+    logging.getLogger("agi_agent").info("\n===== Run Report =====")
+    logging.getLogger("agi_agent").info(f"Final Step: {report['agent_info']['step']}")
+    logging.getLogger("agi_agent").info(f"Performance Score: {report['performance']['performance_score']['total_score']:.4f}")
+    logging.getLogger("agi_agent").info(f"Free Energy: {report['cognitive_metrics']['cognitive']['free_energy']:.4f}")
+    logging.getLogger("agi_agent").info(f"Confidence: {report['cognitive_metrics']['cognitive']['confidence']:.4f}")
+    logging.getLogger("agi_agent").info(f"Knowledge Rules: {report['knowledge']['count']}")
+    logging.getLogger("agi_agent").info(f"Safety Risk Level: {report['safety']['risk_level']}")
+    logging.getLogger("agi_agent").info(f"Compliance Rate: {report['compliance']['compliance_rate']:.2f}")
+    logging.getLogger("agi_agent").info(f"Memory Stats: {report['memory_system']}")
+    logging.getLogger("agi_agent").info(f"Soul: {report['soul']['name']} v{report['soul']['version']}")
+    logging.getLogger("agi_agent").info(f"Evolution Stats: {report['dual_loop_evolution']}")
+    logging.getLogger("agi_agent").info(f"\nThree-Layer Architecture Stats:")
+    logging.getLogger("agi_agent").info(f"  Reflex Layer: {report['three_layer_architecture']['reflex']}")
+    logging.getLogger("agi_agent").info(f"  Deliberative Layer: {report['three_layer_architecture']['deliberative']}")
+    logging.getLogger("agi_agent").info(f"  Meta-Cognitive Layer: {report['three_layer_architecture']['meta_cognitive']}")
+    logging.getLogger("agi_agent").info(f"\nAutonomous Action Stats: {report['autonomous_action']}")
+    logging.getLogger("agi_agent").info(f"Memory Stats: {report['memory_system']}")
+    logging.getLogger("agi_agent").info(f"Soul: {report['soul']['name']} v{report['soul']['version']}")
+    logging.getLogger("agi_agent").info(f"Evolution Stats: {report['dual_loop_evolution']}")
+    logging.getLogger("agi_agent").info("\nThree-Layer Architecture Stats:")
+    logging.getLogger("agi_agent").info(f"  Reflex Layer: {report['three_layer_architecture']['reflex']}")
+    logging.getLogger("agi_agent").info(f"  Deliberative Layer: {report['three_layer_architecture']['deliberative']}")
+    logging.getLogger("agi_agent").info(f"  Meta-Cognitive Layer: {report['three_layer_architecture']['meta_cognitive']}")
+    logging.getLogger("agi_agent").info("\nAutonomous Action Stats:")
+    logging.getLogger("agi_agent").info(f"  {report['autonomous_action']}")
+    logging.getLogger("agi_agent").info("\nSecurity System:")
+    logging.getLogger("agi_agent").info(f"  {report['security_system']}")

@@ -27,6 +27,27 @@ from .regression_validator import (
     RegressionValidator, RegressionSeverity, ValidationStatus,
     RegressionItem, RegressionReport, ValidationResult,
 )
+from .improvement_orchestrator import (
+    ImprovementOrchestrator,
+    ImprovementWorkflow,
+    WorkflowInstance,
+    WorkflowNode,
+    WorkflowNodeType,
+    WorkflowStatus,
+    WorkflowEvent,
+    RollbackConfig,
+    RollbackTrigger,
+    get_improvement_orchestrator,
+)
+from .version_manager import (
+    ImprovementVersionManager,
+    Version,
+    VersionChange,
+    VersionComparison,
+    VersionStatus,
+    VersionType,
+    get_version_manager,
+)
 
 __all__ = [
     "RecursiveSelfImprover", "PerformanceEvaluator",
@@ -45,4 +66,23 @@ __all__ = [
     "Issue", "ImprovementProposal", "FeedbackCycle",
     "RegressionValidator", "RegressionSeverity", "ValidationStatus",
     "RegressionItem", "RegressionReport", "ValidationResult",
+    # 改进编排引擎
+    "ImprovementOrchestrator",
+    "ImprovementWorkflow",
+    "WorkflowInstance",
+    "WorkflowNode",
+    "WorkflowNodeType",
+    "WorkflowStatus",
+    "WorkflowEvent",
+    "RollbackConfig",
+    "RollbackTrigger",
+    "get_improvement_orchestrator",
+    # 版本管理系统
+    "ImprovementVersionManager",
+    "Version",
+    "VersionChange",
+    "VersionComparison",
+    "VersionStatus",
+    "VersionType",
+    "get_version_manager",
 ]

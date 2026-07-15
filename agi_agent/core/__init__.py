@@ -15,6 +15,10 @@ from .exceptions import (
 from .config import ConfigManager, get_config
 from .registry import ModuleRegistry, get_registry
 from .adaptive_config import AdaptiveConfigManager, get_adaptive_config, adapt_param, PerformanceLevel, AdaptiveStrategy
+from .event_bus import (
+    EventBus, get_event_bus,
+    Event, EventSeverity, EventCategory, Subscription,
+)
 
 __all__ = [
     "BaseModule",
@@ -34,4 +38,10 @@ __all__ = [
     "adapt_param",
     "PerformanceLevel",
     "AdaptiveStrategy",
+    "EventBus",
+    "get_event_bus",
+    "Event",
+    "EventSeverity",
+    "EventCategory",
+    "Subscription",
 ]

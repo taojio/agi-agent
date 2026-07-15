@@ -2,7 +2,97 @@ import torch
 import torch.nn as nn
 from typing import Dict, List, Optional, Any
 import numpy as np
+from enum import Enum
 from ..config.settings import DEVICE
+
+
+class FusionStrategy(Enum):
+    CONCAT = "concat"
+    WEIGHTED = "weighted"
+    ATTENTION = "attention"
+    ADAPTIVE = "adaptive"
+
+
+class MultimodalFusion(nn.Module):
+    def __init__(self, modalities: dict = None, output_dim: int = 16, 
+                 strategy: FusionStrategy = FusionStrategy.ATTENTION):
+        super().__init__()
+        self.modalities = modalities if modalities is not None else {}
+        self.output_dim = output_dim
+        self.strategy = strategy
+        
+        self.fusion_layer = nn.Sequential(
+            nn.Linear(output_dim * 2, output_dim),
+            nn.LeakyReLU(),
+            nn.Linear(output_dim, output_dim)
+        ).to(DEVICE)
+    
+    def forward(self, inputs: Dict[str, torch.Tensor]) -> torch.Tensor:
+        if not inputs:
+            return torch.zeros(1, self.output_dim).to(DEVICE)
+        
+        features = []
+        for name, data in inputs.items():
+            if isinstance(data, np.ndarray):
+                data = torch.tensor(data, dtype=torch.float32).to(DEVICE)
+            if data.dim() == 1:
+                data = data.unsqueeze(0)
+            if data.shape[1] < self.output_dim:
+                padding = torch.zeros(data.shape[0], self.output_dim - data.shape[1]).to(DEVICE)
+                data = torch.cat([data, padding], dim=1)
+            elif data.shape[1] > self.output_dim:
+                data = data[:, :self.output_dim]
+            features.append(data)
+        
+        if len(features) == 1:
+            return features[0]
+        
+        if self.strategy == FusionStrategy.CONCAT:
+            concatenated = torch.cat(features, dim=-1)
+            return self.fusion_layer(concatenated[:, :self.output_dim * 2])
+        elif self.strategy == FusionStrategy.WEIGHTED:
+            weights = torch.ones(len(features)) / len(features)
+            weighted = sum(w * f for w, f in zip(weights, features))
+            return weighted
+        elif self.strategy == FusionStrategy.ATTENTION:
+            concatenated = torch.cat(features, dim=-1)
+            return self.fusion_layer(concatenated[:, :self.output_dim * 2])
+        else:
+            concatenated = torch.cat(features, dim=-1)
+            return self.fusion_layer(concatenated[:, :self.output_dim * 2])
+    
+    def fuse(self, modalities: Dict[str, Any]) -> Dict[str, Any]:
+        if not modalities:
+            return {"fused_feature": np.zeros(self.output_dim), "num_modalities": 0}
+        
+        inputs = {}
+        for name, data in modalities.items():
+            if isinstance(data, np.ndarray):
+                inputs[name] = data
+            else:
+                inputs[name] = np.array([data])
+        
+        try:
+            output = self(inputs)
+            fused_np = output.detach().cpu().numpy().flatten()
+            return {
+                "fused_feature": fused_np,
+                "num_modalities": len(modalities),
+                "strategy": self.strategy.value
+            }
+        except Exception:
+            fused_feature = np.zeros(self.output_dim)
+            for name, data in modalities.items():
+                if isinstance(data, np.ndarray):
+                    flat = data.flatten()[:self.output_dim]
+                    fused_feature[:len(flat)] += flat
+            if len(modalities) > 0:
+                fused_feature /= len(modalities)
+            return {
+                "fused_feature": fused_feature,
+                "num_modalities": len(modalities),
+                "strategy": self.strategy.value
+            }
 
 
 class ModalityAttention(nn.Module):
@@ -128,32 +218,35 @@ class DynamicFusionLayer(nn.Module):
         return fused
 
 
-class MultimodalFusion(nn.Module):
-    def __init__(self, modalities: dict, output_dim: int = 16):
+class EnhancedMultimodalFusion(nn.Module):
+    def __init__(self, modalities: dict = None, output_dim: int = 16, 
+                 strategy: FusionStrategy = FusionStrategy.ATTENTION):
         super().__init__()
-        self.modalities = modalities
+        self.modalities = modalities if modalities is not None else {}
         self.output_dim = output_dim
+        self.strategy = strategy
 
         self.modal_encoders = nn.ModuleDict()
-        for name, dim in modalities.items():
-            self.modal_encoders[name] = AdaptiveModalityEncoder(dim, output_dim, name)
+        if self.modalities:
+            for name, dim in modalities.items():
+                self.modal_encoders[name] = AdaptiveModalityEncoder(dim, output_dim, name)
 
-        self.dynamic_fusion = DynamicFusionLayer(
-            output_dim, len(modalities), output_dim
-        )
+            self.dynamic_fusion = DynamicFusionLayer(
+                output_dim, len(modalities), output_dim
+            )
 
-        self.adaptive_weights = nn.ParameterDict()
-        for name in modalities.keys():
-            self.adaptive_weights[name] = nn.Parameter(torch.tensor(1.0 / len(modalities)))
+            self.adaptive_weights = nn.ParameterDict()
+            for name in modalities.keys():
+                self.adaptive_weights[name] = nn.Parameter(torch.tensor(1.0 / len(modalities)))
 
-        self.context_encoder = nn.Sequential(
-            nn.Linear(output_dim * 3, 64),
-            nn.LeakyReLU(),
-            nn.Linear(64, len(modalities)),
-            nn.Softmax(dim=-1)
-        ).to(DEVICE)
+            self.context_encoder = nn.Sequential(
+                nn.Linear(output_dim * 3, 64),
+                nn.LeakyReLU(),
+                nn.Linear(64, len(modalities)),
+                nn.Softmax(dim=-1)
+            ).to(DEVICE)
 
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+            self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
         self.modality_history = []
         self.max_history = 10
@@ -299,3 +392,36 @@ class MultimodalFusion(nn.Module):
 
         self.dynamic_fusion = DynamicFusionLayer(new_dim, len(self.modalities), new_dim)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+
+    def fuse(self, modalities: Dict[str, Any]) -> Dict[str, Any]:
+        if not modalities:
+            return {"fused_feature": np.zeros(self.output_dim), "num_modalities": 0}
+        
+        inputs = {}
+        for name, data in modalities.items():
+            if isinstance(data, np.ndarray):
+                inputs[name] = data
+            else:
+                inputs[name] = np.array([data]) if not isinstance(data, np.ndarray) else data
+        
+        try:
+            output = self(inputs)
+            fused_np = output.detach().cpu().numpy().flatten()
+            return {
+                "fused_feature": fused_np,
+                "num_modalities": len(modalities),
+                "strategy": self.strategy.value
+            }
+        except Exception:
+            fused_feature = np.zeros(self.output_dim)
+            for name, data in modalities.items():
+                if isinstance(data, np.ndarray):
+                    flat = data.flatten()[:self.output_dim]
+                    fused_feature[:len(flat)] += flat
+            if len(modalities) > 0:
+                fused_feature /= len(modalities)
+            return {
+                "fused_feature": fused_feature,
+                "num_modalities": len(modalities),
+                "strategy": self.strategy.value
+            }
