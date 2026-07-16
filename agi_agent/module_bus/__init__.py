@@ -39,6 +39,14 @@ from .bus import (
     ModuleBus,
     get_module_bus,
 )
+from .enhanced_bus import (
+    EnhancedModuleBus,
+    get_enhanced_bus,
+    ServiceStatus,
+    VersionMatch,
+    ServiceInterceptor,
+    ServiceVersion,
+)
 
 __all__ = [
     "ModuleMessage",
@@ -63,4 +71,10 @@ __all__ = [
     "create_stream",
     "ModuleBus",
     "get_module_bus",
+    "EnhancedModuleBus",
+    "get_enhanced_bus",
+    "ServiceStatus",
+    "VersionMatch",
+    "ServiceInterceptor",
+    "ServiceVersion",
 ]

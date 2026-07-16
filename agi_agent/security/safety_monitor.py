@@ -1,5 +1,6 @@
 import os
 import psutil
+import agi_agent.utils.metrics as metrics
 import torch
 import time
 from ..config.settings import SAFETY_MAX_ENERGY, SAFETY_MAX_MEMORY_GB, SAFETY_MAX_GPU_UTIL, SAFETY_MAX_LATENCY_MS

@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agi_agent.config.settings import DEVICE, EVOLVE_TRIGGER_STEP, SAVE_INTERVAL, EVAL_INTERVAL
 from agi_agent.utils.metrics import calc_free_energy, calc_entropy, calc_kl_divergence, calc_confidence, calc_novelty, calc_convergence_speed
 from agi_agent.perception import GrowingAutoEncoder, MultimodalFusion
-from agi_agent.cognitive import CognitiveInferenceLayer, DualSystemCognition, SNNEnhancer, CausalReasoningEngine, UnifiedCognitiveOrchestrator, ArchitectureMutator, SelfModel, GeneralStereoscopicSNN, EnhancedSNN, ModuleSynapticBus, INTERFACE_MAP, SpikingGrowthNetwork, NetworkDimensions
+from agi_agent.cognitive import CognitiveInferenceLayer, DualSystemCognition, SNNEnhancer, CausalReasoningEngine, UnifiedCognitiveOrchestrator, ArchitectureMutator, SelfModel, GeneralStereoscopicSNN, EnhancedSNN, ModuleSynapticBus, INTERFACE_MAP, SpikingGrowthNetwork, NetworkDimensions, SpikingGrowthNetwork, NetworkDimensions
 from agi_agent.learning import MetaLearningLayer, KnowledgeGraph, StructuredKnowledgeIngestor
 from agi_agent.evolution import EvolutionEngine, MetaSkillGenerator, DualLoopEvolution, EvolutionLevel, QuadLevelEvolution
 from agi_agent.execution import ActionExecutionLayer
@@ -225,10 +225,10 @@ class SelfEvolvingAGI:
                 num_layers=3,
             )
         )
-        logging.getLogger("agi_agent").info(f"[OK] SpikingGrowthNetwork 初始化完成")
-        logging.getLogger("agi_agent").info(f"  - 神经元数量: {len(self.growth_snn.neurons)}")
-        logging.getLogger("agi_agent").info(f"  - 突触数量: {len(self.growth_snn.synapses)}")
-        logging.getLogger("agi_agent").info(f"  - 输入/输出维度: {self.growth_snn.dimensions.input_size}")
+        print(f"[OK] SpikingGrowthNetwork 初始化完成")
+        print(f"  - 神经元数量: {len(self.growth_snn.neurons)}")
+        print(f"  - 突触数量: {len(self.growth_snn.synapses)}")
+        print(f"  - 输入/输出维度: {self.growth_snn.dimensions.input_size}")
 
         self.orchestrator = UnifiedCognitiveOrchestrator(
             perception=self.perception,

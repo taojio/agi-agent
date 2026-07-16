@@ -159,7 +159,11 @@ class ResourceInspectionTask(BaseModule):
             self._history.clear()
 
     def _health_check(self) -> bool:
+<<<<<<< HEAD
         return True
+=======
+        return self._latest is not None
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
 
     # ---- 公共方法 ----
     def collect(self) -> ResourceReport:

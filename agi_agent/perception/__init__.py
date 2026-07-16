@@ -1,4 +1,5 @@
 from .autoencoder import GrowingAutoEncoder
+<<<<<<< HEAD
 from .multimodal_fusion import MultimodalFusion, EnhancedMultimodalFusion
 from .enhanced_multimodal import (
     EnhancedMultimodalFusion, CrossModalAttention,
@@ -11,6 +12,9 @@ from .advanced_multimodal import (
     ProgressiveMultimodalFusion, AdvancedMultimodalFusionEngine,
     get_advanced_multimodal_fusion,
 )
+=======
+from .multimodal_fusion import MultimodalFusion
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
 from .text_perception import (
     UserTextReceiver,
     DocumentParser,
@@ -34,15 +38,19 @@ from .fusion_pipeline import (
     PerceptionStructPackager,
     InvalidModalityFilter,
 )
+<<<<<<< HEAD
 from .meta_integration import (
     MetaEnhancedFeatureExtractor,
     MetaEnhancedPatternRecognizer,
     PerceptionMetaIntegration,
 )
+=======
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
 
 __all__ = [
     "GrowingAutoEncoder",
     "MultimodalFusion",
+<<<<<<< HEAD
     "EnhancedMultimodalFusion",
     "CrossModalAttention",
     "ModalityQualityAssessor",
@@ -58,6 +66,8 @@ __all__ = [
     "ProgressiveMultimodalFusion",
     "AdvancedMultimodalFusionEngine",
     "get_advanced_multimodal_fusion",
+=======
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
     "UserTextReceiver",
     "DocumentParser",
     "OCRExtractor",
@@ -73,7 +83,10 @@ __all__ = [
     "MultimodalTimeAligner",
     "PerceptionStructPackager",
     "InvalidModalityFilter",
+<<<<<<< HEAD
     "MetaEnhancedFeatureExtractor",
     "MetaEnhancedPatternRecognizer",
     "PerceptionMetaIntegration",
+=======
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
 ]

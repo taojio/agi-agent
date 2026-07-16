@@ -256,7 +256,8 @@ class NetworkLinkManager(BaseModule):
             self._link_status.clear()
 
     def _health_check(self) -> bool:
-        return True
+        with self._lock:
+            return any(s.connected for s in self._link_status.values())
 
     # ---- 公共方法 ----
     def connect(self, endpoint: NetworkEndpoint) -> bool:

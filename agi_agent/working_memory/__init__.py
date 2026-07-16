@@ -40,6 +40,7 @@ from .cleanup import (
     ClearResult,
     ShortTermMemoryCleaner,
 )
+<<<<<<< HEAD
 from .enhanced_memory import (
     MemoryImportance,
     MemoryStatus,
@@ -50,6 +51,8 @@ from .enhanced_memory import (
     ActiveForgettingManager,
     EnhancedMemorySystem,
 )
+=======
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
 
 __all__ = [
     # T044
@@ -72,6 +75,7 @@ __all__ = [
     "CleanerConfig",
     # 聚合包
     "WorkingMemoryBundle",
+<<<<<<< HEAD
     # 增强记忆模块
     "MemoryImportance",
     "MemoryStatus",
@@ -81,6 +85,8 @@ __all__ = [
     "MemoryConflictResolver",
     "ActiveForgettingManager",
     "EnhancedMemorySystem",
+=======
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
 ]
 
 

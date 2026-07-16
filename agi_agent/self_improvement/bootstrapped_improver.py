@@ -228,11 +228,10 @@ class BootstrappedSelfImprover:
         
         return proposals
 
-    def verify_and_apply(self, request: TieredModificationRequest) -> Dict[str, Any]:
+    def verify_only(self, request: TieredModificationRequest) -> Dict[str, Any]:
         result = {
             "request": request.to_dict(),
             "verified": False,
-            "applied": False,
             "verification_report": None,
             "error": None
         }
@@ -253,17 +252,6 @@ class BootstrappedSelfImprover:
                     
                     if report.overall_result == VerificationResult.PASS:
                         result["verified"] = True
-                        success, msg = self.tiered_modifier.execute_request(request)
-                        result["applied"] = success
-                        result["error"] = msg if not success else None
-                        
-                        if success:
-                            self._improvement_counter += 1
-                            self._successful_improvements += 1
-                            self._record_improvement(request, success)
-                            self._maybe_advance_tier()
-                        else:
-                            self._failed_improvements += 1
                     else:
                         result["error"] = "verification_failed"
                 else:
@@ -290,18 +278,51 @@ class BootstrappedSelfImprover:
                 
                 if report.overall_result in (VerificationResult.PASS, VerificationResult.WARN):
                     result["verified"] = True
-                    success, msg = self.tiered_modifier.execute_request(request)
-                    result["applied"] = success
-                    result["error"] = msg if not success else None
-                    
-                    if success:
-                        self._improvement_counter += 1
-                        self._successful_improvements += 1
-                        self._record_improvement(request, success)
-                    else:
-                        self._failed_improvements += 1
                 else:
                     result["error"] = "verification_failed"
+        
+        return result
+
+    def apply_only(self, request: TieredModificationRequest) -> Dict[str, Any]:
+        result = {
+            "request": request.to_dict(),
+            "applied": False,
+            "error": None
+        }
+        
+        success, msg = self.tiered_modifier.execute_request(request)
+        result["applied"] = success
+        result["error"] = msg if not success else None
+        
+        if success:
+            self._improvement_counter += 1
+            self._successful_improvements += 1
+            self._record_improvement(request, success)
+            if request.action == "set_param":
+                self._maybe_advance_tier()
+        else:
+            self._failed_improvements += 1
+        
+        return result
+
+    def verify_and_apply(self, request: TieredModificationRequest) -> Dict[str, Any]:
+        result = {
+            "request": request.to_dict(),
+            "verified": False,
+            "applied": False,
+            "verification_report": None,
+            "error": None
+        }
+        
+        verify_result = self.verify_only(request)
+        result["verified"] = verify_result["verified"]
+        result["verification_report"] = verify_result["verification_report"]
+        result["error"] = verify_result["error"]
+        
+        if result["verified"]:
+            apply_result = self.apply_only(request)
+            result["applied"] = apply_result["applied"]
+            result["error"] = apply_result["error"]
         
         return result
 

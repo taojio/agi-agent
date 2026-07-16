@@ -4,6 +4,7 @@ from .hard_boundary import HardBoundarySystem, BoundaryType, BoundaryRule
 from .risk_classifier import RiskClassifier, RiskLevel, RiskAction, RiskRule
 from .circuit_breaker import CircuitBreaker, BreakerState, TriggerCondition
 from .audit_trail import AuditTrail, AuditCategory, AuditEntry
+from .security_event_bridge import SecurityEventBridge, SecurityAlertType, get_security_event_bridge
 from .vulnerability_scanner import (
     VulnerabilityScanner,
     OWASPRuleLibrary,
@@ -88,6 +89,9 @@ __all__ = [
     "AuditTrail",
     "AuditCategory",
     "AuditEntry",
+    "SecurityEventBridge",
+    "SecurityAlertType",
+    "get_security_event_bridge",
     "VulnerabilityScanner",
     "OWASPRuleLibrary",
     "VulnerabilityRule",

@@ -1,14 +1,23 @@
 import numpy as np
 import torch
 import time
+from typing import Dict, Optional, Any
 from collections import deque
 from ..config.settings import DEVICE
+from ..perception.multimodal_fusion import EnhancedMultimodalFusion, FusionStrategy
+from ..perception.fusion_pipeline import (
+    MultimodalTimeAligner, 
+    PerceptionStructPackager, 
+    InvalidModalityFilter,
+    AlignedBundle,
+    PerceptionReport
+)
 
 
 class UnifiedCognitiveOrchestrator:
     def __init__(self, perception, cognition, dual_cognition, snn_enhancer, causal_reasoner, 
                  meta_cog, homeostasis, execution, knowledge_graph, self_model=None,
-                 growth_snn=None):
+                 growth_snn=None, multimodal_fusion: Optional[EnhancedMultimodalFusion] = None):
         self.perception = perception
         self.cognition = cognition
         self.dual_cognition = dual_cognition
@@ -21,6 +30,9 @@ class UnifiedCognitiveOrchestrator:
         self.self_model = self_model
         self.growth_snn = growth_snn
         
+        self.multimodal_fusion = multimodal_fusion
+        self._init_multimodal_pipeline()
+        
         if self.self_model is not None and hasattr(self.homeostasis, 'set_self_model'):
             self.homeostasis.set_self_model(self.self_model)
         
@@ -32,15 +44,33 @@ class UnifiedCognitiveOrchestrator:
             'knowledge_to_cognition': 0.3,
             'self_model_to_goal': 0.4,
             'growth_snn_blend': 0.3,
+            'multimodal_weight': 0.4,
         }
         
         self.history = deque(maxlen=50)
         self.enabled = True
+        self._current_perception_report: Optional[PerceptionReport] = None
 
-        # 原子任务模块运行时服务（可选注入，缺失时退化为 no-op）
         self.observability = None
         self.infrastructure = None
         self.working_memory = None
+
+    def _init_multimodal_pipeline(self):
+        self.time_aligner = MultimodalTimeAligner(time_window=0.5)
+        self.struct_packager = PerceptionStructPackager()
+        self.invalid_filter = InvalidModalityFilter(
+            text_min_len=1,
+            black_pixel_ratio=0.98,
+            silence_rms_threshold=0.005,
+            duplicate_window=10
+        )
+        
+        if self.multimodal_fusion is None:
+            self.multimodal_fusion = EnhancedMultimodalFusion(
+                modalities={"text": 768, "visual": 512, "audio": 256},
+                output_dim=128,
+                strategy=FusionStrategy.ATTENTION
+            )
 
     def set_runtime_services(self, observability=None, infrastructure=None, working_memory=None):
         """注入原子任务清单模块提供的运行时服务（可观测性/基础设施/工作记忆）。
@@ -54,7 +84,7 @@ class UnifiedCognitiveOrchestrator:
         if working_memory is not None:
             self.working_memory = working_memory
     
-    def orchestrate(self, obs_tensor):
+    def orchestrate(self, obs_tensor, modalities: Optional[Dict[str, Any]] = None):
         if not self.enabled:
             return None
 
@@ -74,7 +104,8 @@ class UnifiedCognitiveOrchestrator:
         if structure_changed:
             self._handle_structural_change(feat.shape[-1])
         
-        fused_feat = self._integrate_multimodal(feat)
+        fused_feat, perception_report = self._integrate_multimodal(feat, modalities)
+        self._current_perception_report = perception_report
         
         self.snn_enhancer.set_learning_rate(self._homeostasis_driven_learning_rate())
         
@@ -188,9 +219,79 @@ class UnifiedCognitiveOrchestrator:
             'growth_snn_stats': growth_snn_stats,
         }
     
-    def _integrate_multimodal(self, feat):
+    def _integrate_multimodal(self, feat, modalities: Optional[Dict[str, Any]] = None) -> tuple:
         feat_np = feat.detach().cpu().numpy() if hasattr(feat, 'detach') else np.array(feat)
-        return feat_np
+        
+        perception_report = None
+        
+        if modalities and self.multimodal_fusion:
+            aligned_bundle = self.time_aligner.align(
+                text_msgs=modalities.get('text', []),
+                frames=modalities.get('visual', []),
+                audio_chunks=modalities.get('audio', [])
+            )
+            
+            perception_report = self.struct_packager.package(aligned_bundle)
+            
+            if self.invalid_filter.filter(perception_report):
+                fusion_input = {}
+                if perception_report.text:
+                    text_embedding = self._embed_text(perception_report.text)
+                    if text_embedding is not None:
+                        fusion_input['text'] = text_embedding
+                
+                if perception_report.visual and perception_report.visual.get('has_data'):
+                    visual_features = self._extract_visual_features(perception_report.visual)
+                    if visual_features is not None:
+                        fusion_input['visual'] = visual_features
+                
+                if perception_report.audio and perception_report.audio.get('samples_count', 0) > 0:
+                    audio_features = self._extract_audio_features(perception_report.audio)
+                    if audio_features is not None:
+                        fusion_input['audio'] = audio_features
+                
+                if fusion_input:
+                    try:
+                        fusion_result = self.multimodal_fusion.fuse(fusion_input)
+                        fused_feature = fusion_result.get('fused_feature', feat_np.flatten())
+                        if len(fused_feature) < feat_np.shape[-1]:
+                            padding = np.zeros(feat_np.shape[-1] - len(fused_feature))
+                            fused_feature = np.concatenate([fused_feature, padding])
+                        elif len(fused_feature) > feat_np.shape[-1]:
+                            fused_feature = fused_feature[:feat_np.shape[-1]]
+                        
+                        multimodal_weight = self.integration_weights.get('multimodal_weight', 0.4)
+                        feat_np = (1 - multimodal_weight) * feat_np + multimodal_weight * fused_feature.reshape(feat_np.shape)
+                    except Exception:
+                        pass
+        
+        return feat_np, perception_report
+
+    def _embed_text(self, text: str) -> Optional[np.ndarray]:
+        try:
+            if hasattr(self.cognition, 'text_encoder'):
+                return self.cognition.text_encoder.encode(text)
+            elif hasattr(self.dual_cognition, 'encode_text'):
+                return self.dual_cognition.encode_text(text)
+        except Exception:
+            pass
+        return None
+
+    def _extract_visual_features(self, visual: Dict[str, Any]) -> Optional[np.ndarray]:
+        try:
+            if hasattr(self.perception, 'visual_extractor'):
+                return self.perception.visual_extractor.extract(visual)
+        except Exception:
+            pass
+        return None
+
+    def _extract_audio_features(self, audio: Dict[str, Any]) -> Optional[np.ndarray]:
+        try:
+            if hasattr(self.perception, 'audio_extractor'):
+                return self.perception.audio_extractor.extract(audio)
+        except Exception:
+            pass
+        return None
     
     def _get_current_time(self):
         return len(self.history) * 1.0

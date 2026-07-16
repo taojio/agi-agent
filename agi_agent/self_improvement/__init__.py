@@ -4,7 +4,7 @@ self_improvement/__init__.py - 自我改进模块
 v3.0 升级：新增性能基准、反馈闭环、回归验证
 """
 from .self_improver import RecursiveSelfImprover
-from .performance_evaluator import PerformanceEvaluator
+from ..evaluation.evaluator import PerformanceEvaluator
 from .self_diagnostic import SelfDiagnosticEngine
 from .safety_verifier import ImprovementSafetyVerifier
 from .tiered_modification import (

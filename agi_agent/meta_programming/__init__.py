@@ -8,10 +8,13 @@ meta_programming/__init__.py - 元编程模块
 - CodeAnalyzer: 代码分析器
 - DynamicExecutor: 动态代码执行器
 - MetaProgrammingOrchestrator: 元编程编排器
+<<<<<<< HEAD
 - CrossLanguageCodeAnalyzer: 跨语言代码分析器
 - SelfModifyingSandbox: 自修改安全沙箱
 - PerformanceDashboard: 性能监控仪表盘
 - AutomatedTestSuite: 自动化测试套件
+=======
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
 - LanguageRules: 语言规则基础类
 - PythonLanguageRules: Python语言规则
 - CLanguageRules: C语言规则
@@ -45,6 +48,7 @@ from .assembly_rules import AssemblyLanguageRules
 from .semantic_analyzer import SemanticAnalyzer
 from .rule_validator import RuleValidator, RuleQueryEngine
 from .documentation_generator import RuleDocumentationGenerator
+<<<<<<< HEAD
 from .cross_language_analyzer import (
     CrossLanguageCodeAnalyzer, LanguageType as CrossLangLanguageType,
     CodeAnalysisResult as CrossLangAnalysisResult,
@@ -70,6 +74,8 @@ from .test_case_generator import (
     TestType, TestStrategy, TestResultStatus,
     TestCase, TestResult, CoverageReport, TestSuite,
 )
+=======
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
 
 __all__ = [
     # 代码生成
@@ -83,6 +89,7 @@ __all__ = [
     "SandboxConfig", "ExecutionStatus",
     # 编排器
     "MetaProgrammingOrchestrator",
+<<<<<<< HEAD
     # 跨语言分析
     "CrossLanguageCodeAnalyzer",
     # 自修改沙箱
@@ -92,6 +99,8 @@ __all__ = [
     "PerformanceDashboard", "BottleneckType", "SeverityLevel",
     # 测试生成
     "AutomatedTestSuite", "TestType", "TestStrategy", "TestResultStatus",
+=======
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
     # 语言规则基础类
     "LanguageType", "GrammarCategory", "RuleSeverity",
     "SyntaxRule", "SemanticRule", "ValidationError", "ValidationResult",

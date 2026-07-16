@@ -18,11 +18,14 @@ from .module_interfaces import INTERFACE_MAP, create_interface, MemoryNeuralInte
 from .context_awareness import ContextAwarenessEngine, ContextFrame, SceneType, ContextType
 from .world_model import WorldModelEngine, EntityCategory, AbstractionLevel, ModalityType, WorldEntity, CausalRelation, SocialRule, SimulationResult, MultiModalEncoder, HierarchicalRepresentation, DynamicsPredictor, CausalReasoner, MemorySystem, PlanningInterface
 from .growth_snn import SpikingGrowthNetwork, ResourceAwareNetworkSizer, GrowthCapableNeuron, GrowthCapableSynapse, GrowthController, NetworkDimensions, GrowthProbabilities
+<<<<<<< HEAD
 from .meta_integration import (
     MetaEnhancedKnowledgeRepresentation,
     MetaEnhancedReasoningEngine,
     CognitiveMetaIntegration,
 )
+=======
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232
 
 __all__ = ["HierarchicalPredictiveCoding", "CognitiveInferenceLayer", "System1", "System2", "DualSystemCognition",
            "UnifiedReasoningEngine", "ReasoningMode", "ReasoningResult", "get_unified_reasoner",
@@ -42,5 +45,9 @@ __all__ = ["HierarchicalPredictiveCoding", "CognitiveInferenceLayer", "System1",
            "MetaCognitionNeuralInterface", "HomeostasisNeuralInterface",
            "ContextAwarenessEngine", "ContextFrame", "SceneType", "ContextType",
            "WorldModelEngine", "EntityCategory", "AbstractionLevel", "ModalityType", "WorldEntity", "CausalRelation", "SocialRule", "SimulationResult", "MultiModalEncoder", "HierarchicalRepresentation", "DynamicsPredictor", "CausalReasoner", "MemorySystem", "PlanningInterface",
+<<<<<<< HEAD
            "SpikingGrowthNetwork", "ResourceAwareNetworkSizer", "GrowthCapableNeuron", "GrowthCapableSynapse", "GrowthController", "NetworkDimensions", "GrowthProbabilities",
            "MetaEnhancedKnowledgeRepresentation", "MetaEnhancedReasoningEngine", "CognitiveMetaIntegration"]
+=======
+           "SpikingGrowthNetwork", "ResourceAwareNetworkSizer", "GrowthCapableNeuron", "GrowthCapableSynapse", "GrowthController", "NetworkDimensions", "GrowthProbabilities"]
+>>>>>>> e9d14e853c9986e89dbbe4bdba2ce730df89b232

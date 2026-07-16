@@ -319,7 +319,7 @@ class AutomatedSelfImprovementLoop:
                 try:
                     request = self._proposal_to_request(proposal)
                     if request:
-                        verification = self.bootstrap_improver.verify_and_apply(request)
+                        verification = self.bootstrap_improver.verify_only(request)
                         if verification.get("verified", False):
                             proposal.status = ImprovementStatus.VERIFIED
                             verified.append(proposal)
@@ -376,7 +376,7 @@ class AutomatedSelfImprovementLoop:
             if self.bootstrap_improver:
                 request = self._proposal_to_request(proposal)
                 if request:
-                    result = self.bootstrap_improver.verify_and_apply(request)
+                    result = self.bootstrap_improver.apply_only(request)
                     applied = result.get("applied", False)
 
             if not applied and self.agent_ref and hasattr(self.agent_ref, 'self_improver'):
